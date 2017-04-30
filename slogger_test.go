@@ -1,6 +1,7 @@
 package slogger
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -10,7 +11,7 @@ func Test_SLogger_Base(t *testing.T) {
 		LogLevel:     WARN,
 		LogName:      "dummy1",
 		LogDirectory: "dumym2",
-		LogFilepath:  "dummy3",
+		LogExtension: ".log",
 	}
 	r := Slogger{}
 
@@ -24,4 +25,21 @@ func Test_SLogger_Base(t *testing.T) {
 		t.Errorf("Settings must be DATA.")
 	}
 
+}
+
+func Test_SLogger_Debug(t *testing.T) {
+	DATA := SloggerSettings{
+		LogLevel:     DEBUG,
+		LogName:      "TEST",
+		LogDirectory: "./",
+		LogExtension: ".log",
+	}
+
+	r := Slogger{}
+	r.Initialize(DATA)
+	r.Debug("DEBUG %d", 100)
+	r.Info("INFO %f", 1.2345)
+	r.Warn("WARN %s", "warn message")
+	r.Error("ERROR")
+	r.Critical("Critical %+v", errors.New("Critical"))
 }

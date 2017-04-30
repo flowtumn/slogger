@@ -1,6 +1,7 @@
 package slogger
 
 import (
+	"fmt"
 	"os"
 	"sync"
 )
@@ -9,13 +10,18 @@ type SloggerSettings struct {
 	LogLevel     LogLevel
 	LogName      string
 	LogDirectory string
-	LogFilepath  string
+	LogExtension string
 }
 
 type Slogger struct {
 	mutex    sync.Mutex
 	settings SloggerSettings
+	logPath  string
 	logFp    *os.File
+}
+
+func _CreateLogFileName(prefix string, suffix string) string {
+	return prefix + GetTimeStamp(Normal) + suffix
 }
 
 func (p *Slogger) _SafeDo(f func() interface{}) interface{} {
@@ -31,6 +37,10 @@ func (p *Slogger) Initialize(settings SloggerSettings) {
 	p._SafeDo(
 		func() interface{} {
 			p.settings = settings
+			if nil != p.logFp {
+				p.logFp.Close()
+				p.logFp = nil
+			}
 			return nil
 		},
 	)
@@ -50,9 +60,40 @@ func (p *Slogger) Settings() *SloggerSettings {
 
 //output log.
 func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
-	p._SafeDo(
+	//filter to loglevel.
+	if logLevel > p.settings.LogLevel {
+		return
+	}
+
+	if nil == p._UpdateSink() {
+		p._SafeDo(
+			func() interface{} {
+				p.logFp.WriteString(
+					GetTimeStamp(Full) + " " +
+						logLevel.toStr() + " " +
+						fmt.Sprintf(format, v...) +
+						"\n",
+				)
+				return nil
+			},
+		)
+	}
+}
+
+func (p *Slogger) _UpdateSink() interface{} {
+	return p._SafeDo(
 		func() interface{} {
-			return nil
+			if nil != p.logFp {
+				p.logFp.Close()
+			}
+
+			p.logPath = _CreateLogFileName(p.settings.LogName, p.settings.LogExtension)
+			if fp, err := os.OpenFile(p.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); nil == err {
+				p.logFp = fp
+				return nil
+			} else {
+				return err
+			}
 		},
 	)
 }
