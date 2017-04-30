@@ -13,15 +13,24 @@ type SloggerSettings struct {
 	LogExtension string
 }
 
+type SloggerOutputCount struct {
+	Critical int64
+	Error    int64
+	Warn     int64
+	Info     int64
+	Debug    int64
+}
+
 type Slogger struct {
 	mutex    sync.Mutex
 	settings SloggerSettings
+	count    SloggerOutputCount
 	logPath  string
 	logFp    *os.File
 }
 
 func _CreateLogFileName(prefix string, suffix string) string {
-	return prefix + GetTimeStamp(Normal) + suffix
+	return prefix + "-" + GetTimeStamp(Normal) + "." + suffix
 }
 
 func (p *Slogger) _SafeDo(f func() interface{}) interface{} {
@@ -37,6 +46,19 @@ func (p *Slogger) Initialize(settings SloggerSettings) {
 	p._SafeDo(
 		func() interface{} {
 			p.settings = settings
+			p.count = SloggerOutputCount{}
+			if nil != p.logFp {
+				p.logFp.Close()
+				p.logFp = nil
+			}
+			return nil
+		},
+	)
+}
+
+func (p *Slogger) Close() {
+	p._SafeDo(
+		func() interface{} {
 			if nil != p.logFp {
 				p.logFp.Close()
 				p.logFp = nil
@@ -58,10 +80,34 @@ func (p *Slogger) Settings() *SloggerSettings {
 	return nil
 }
 
+func (p *Slogger) Counters() *SloggerOutputCount {
+	if v, ok := p._SafeDo(
+		func() interface{} {
+			return p.count
+		},
+	).(SloggerOutputCount); ok {
+		return &v
+	}
+
+	return nil
+}
+
+func (p *Slogger) GetLogPath() *string {
+	if v, ok := p._SafeDo(
+		func() interface{} {
+			return p.logPath
+		},
+	).(string); ok {
+		return &v
+	}
+
+	return nil
+}
+
 //output log.
-func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
+func (p *Slogger) record(fs func(), logLevel LogLevel, format string, v ...interface{}) {
 	//filter to loglevel.
-	if logLevel > p.settings.LogLevel {
+	if logLevel < p.settings.LogLevel {
 		return
 	}
 
@@ -74,6 +120,9 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 						fmt.Sprintf(format, v...) +
 						"\n",
 				)
+
+				//Success.
+				fs()
 				return nil
 			},
 		)
@@ -99,21 +148,56 @@ func (p *Slogger) _UpdateSink() interface{} {
 }
 
 func (p *Slogger) Critical(format string, v ...interface{}) {
-	p.record(CRITICAL, format, v...)
+	p.record(
+		func() {
+			p.count.Critical = p.count.Critical + 1
+		},
+		CRITICAL,
+		format,
+		v...,
+	)
 }
 
 func (p *Slogger) Error(format string, v ...interface{}) {
-	p.record(ERROR, format, v...)
+	p.record(
+		func() {
+			p.count.Error = p.count.Error + 1
+		},
+		ERROR,
+		format,
+		v...,
+	)
 }
 
 func (p *Slogger) Warn(format string, v ...interface{}) {
-	p.record(WARN, format, v...)
+	p.record(
+		func() {
+			p.count.Warn = p.count.Warn + 1
+		},
+		WARN,
+		format,
+		v...,
+	)
 }
 
 func (p *Slogger) Info(format string, v ...interface{}) {
-	p.record(INFO, format, v...)
+	p.record(
+		func() {
+			p.count.Info = p.count.Critical + 1
+		},
+		INFO,
+		format,
+		v...,
+	)
 }
 
 func (p *Slogger) Debug(format string, v ...interface{}) {
-	p.record(DEBUG, format, v...)
+	p.record(
+		func() {
+			p.count.Debug = p.count.Debug + 1
+		},
+		DEBUG,
+		format,
+		v...,
+	)
 }

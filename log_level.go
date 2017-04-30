@@ -8,15 +8,14 @@ const (
 	WARN
 	ERROR
 	CRITICAL
-	UNKNOWN
 )
 
 var logLevelTable = map[LogLevel]string{
-	DEBUG:    "DEBUG",
-	INFO:     "INFO",
-	WARN:     "WARN",
-	ERROR:    "ERROR",
-	CRITICAL: "CRITICAL",
+	DEBUG:    "[DEBUG]",
+	INFO:     "[INFO]",
+	WARN:     "[WARN]",
+	ERROR:    "[ERROR]",
+	CRITICAL: "[CRITICAL]",
 }
 
 func (v LogLevel) toStr() string {
