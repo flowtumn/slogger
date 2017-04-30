@@ -14,13 +14,13 @@ func Test_SLogger_Base(t *testing.T) {
 	}
 	r := Slogger{}
 
-	if reflect.DeepEqual(r.Settings(), DATA) {
+	if reflect.DeepEqual(*r.Settings(), DATA) {
 		t.Errorf("It is equal to DATA. This is incorrect")
 	}
 
 	r.Initialize(DATA)
 
-	if !reflect.DeepEqual(r.Settings(), DATA) {
+	if !reflect.DeepEqual(*r.Settings(), DATA) {
 		t.Errorf("Settings must be DATA.")
 	}
 

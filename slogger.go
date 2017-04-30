@@ -36,19 +36,25 @@ func (p *Slogger) Initialize(settings SloggerSettings) {
 	)
 }
 
-func (p *Slogger) Settings() interface{} {
+func (p *Slogger) Settings() *SloggerSettings {
 	if v, ok := p._SafeDo(
 		func() interface{} {
 			return p.settings
 		},
 	).(SloggerSettings); ok {
-		return v
+		return &v
 	}
 
 	return nil
 }
 
+//output log.
 func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
+	p._SafeDo(
+		func() interface{} {
+			return nil
+		},
+	)
 }
 
 func (p *Slogger) Critical(format string, v ...interface{}) {

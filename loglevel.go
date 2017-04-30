@@ -8,21 +8,20 @@ const (
 	WARN
 	ERROR
 	CRITICAL
+	UNKNOWN
 )
 
+var logLevelTable = map[LogLevel]string{
+	DEBUG:    "DEBUG",
+	INFO:     "INFO",
+	WARN:     "WARN",
+	ERROR:    "ERROR",
+	CRITICAL: "CRITICAL",
+}
+
 func (v LogLevel) toStr() string {
-	switch v {
-	default:
-		return "UNKNOWN"
-	case DEBUG:
-		return "DEBUG"
-	case INFO:
-		return "INFO"
-	case WARN:
-		return "WARN"
-	case ERROR:
-		return "ERROR"
-	case CRITICAL:
-		return "CRITICAL"
+	if v, ok := logLevelTable[v]; ok {
+		return v
 	}
+	return "UNKNOWN"
 }
