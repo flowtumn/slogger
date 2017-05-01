@@ -22,11 +22,12 @@ type SloggerOutputCount struct {
 }
 
 type Slogger struct {
-	mutex    sync.Mutex
-	settings SloggerSettings
-	count    SloggerOutputCount
-	logPath  string
-	logFp    *os.File
+	mutex            sync.Mutex
+	settings         SloggerSettings
+	count            SloggerOutputCount
+	currentTimeStamp string
+	logPath          string
+	logFp            *os.File
 }
 
 func _CreateLogFileName(prefix string, suffix string) string {
@@ -132,6 +133,13 @@ func (p *Slogger) record(fs func(), logLevel LogLevel, format string, v ...inter
 func (p *Slogger) _UpdateSink() interface{} {
 	return p._SafeDo(
 		func() interface{} {
+			tm := GetTimeStamp(Normal)
+			if p.currentTimeStamp == tm {
+				return nil
+			}
+
+			//Update a currentTimeStamp.
+			p.currentTimeStamp = tm
 			if nil != p.logFp {
 				p.logFp.Close()
 			}
