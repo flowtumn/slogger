@@ -69,10 +69,10 @@ func main() {
 ## Log file.
 
 ```
-$ cat /tmp/EXAMPLE-SLOGGER-2017-05-01.log
-2017-05-01 22:38:09 [DEBUG] Debug Message. map[100:200 300:400 500:600]
-2017-05-01 22:38:09 [INFO] Info Message.
-2017-05-01 22:38:09 [WARN] Warn Message.
-2017-05-01 22:38:09 [ERROR] Error Message.
-2017-05-01 22:38:09 [CRITICAL] Critical Message.
+$ cat /tmp/EXAMPLE-SLOGGER-2017-05-03.log
+2017-05-03 00:29:25 [DEBUG] main.go(24): Debug Message. map[100:200 300:400 500:600]
+2017-05-03 00:29:25 [INFO] main.go(25): Info Message.
+2017-05-03 00:29:25 [WARN] main.go(26): Warn Message.
+2017-05-03 00:29:25 [ERROR] main.go(27): Error Message.
+2017-05-03 00:29:25 [CRITICAL] main.go(28): Critical Message.
 ```

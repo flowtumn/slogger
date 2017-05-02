@@ -3,6 +3,8 @@ package slogger
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -132,10 +134,12 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 		return
 	}
 
+	fileName, fileLine := _GetFileInfoFromStack(3)
+
 	logData := _SloggerBuffer{
 		logLevel:          logLevel,
 		currentTimeMillis: GetCurrentTimeMillis(),
-		logMessage:        fmt.Sprintf(format, v...) + "\n",
+		logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...) + "\n",
 	}
 
 	p._SafeDo(
@@ -219,37 +223,27 @@ func (p *Slogger) _UpdateSink(currentTimeMillis int64) interface{} {
 }
 
 func (p *Slogger) Critical(format string, v ...interface{}) {
-	p.record(
-		CRITICAL,
-		format,
-		v...,
-	)
+	p.record(CRITICAL, format, v...)
 }
 
 func (p *Slogger) Error(format string, v ...interface{}) {
-	p.record(
-		ERROR,
-		format,
-		v...,
-	)
+	p.record(ERROR, format, v...)
 }
 
 func (p *Slogger) Warn(format string, v ...interface{}) {
-	p.record(
-		WARN,
-		format,
-		v...,
-	)
+	p.record(WARN, format, v...)
 }
 
 func (p *Slogger) Info(format string, v ...interface{}) {
-	p.record(
-		INFO,
-		format,
-		v...,
-	)
+	p.record(INFO, format, v...)
 }
 
 func (p *Slogger) Debug(format string, v ...interface{}) {
 	p.record(DEBUG, format, v...)
+}
+
+func _GetFileInfoFromStack(depth int) (string, int) {
+	_, file, line, _ := runtime.Caller(depth)
+	_, fileName := filepath.Split(file)
+	return fileName, line
 }
