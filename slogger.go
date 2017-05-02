@@ -23,8 +23,9 @@ type SloggerOutputCount struct {
 }
 
 type _SloggerBuffer struct {
-	logLevel LogLevel
-	log      string
+	logLevel          LogLevel
+	currentTimeMillis int64
+	logMessage        string
 }
 
 type Slogger struct {
@@ -44,7 +45,7 @@ func _CreateLogFileName(prefix string, suffix string) string {
 }
 
 func (p *_SloggerBuffer) _toLogMessage() string {
-	return p.log
+	return ConvertTimeStamp(p.currentTimeMillis, Full) + " " + p.logLevel.toStr() + " " + p.logMessage
 }
 
 func (p *Slogger) _SafeDo(f func() interface{}) interface{} {
@@ -75,6 +76,9 @@ func (p *Slogger) Initialize(settings SloggerSettings) {
 func (p *Slogger) Close() {
 	p._SafeDo(
 		func() interface{} {
+			//Flush.
+			p._RecordProcess()
+
 			if nil != p.logFp {
 				p.logFp.Close()
 				p.logFp = nil
@@ -127,43 +131,47 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 		return
 	}
 
-	log := GetTimeStamp(Full) + " " +
-		logLevel.toStr() + " " +
-		fmt.Sprintf(format, v...) + "\n"
+	logData := _SloggerBuffer{
+		logLevel:          logLevel,
+		currentTimeMillis: GetCurrentTimeMillis(),
+		logMessage:        fmt.Sprintf(format, v...),
+	}
 
 	p._SafeDo(
 		func() interface{} {
 			//Buffering.
-			p.buffer = append(p.buffer, _SloggerBuffer{
-				logLevel: logLevel,
-				log:      log,
-			})
+			p.buffer = append(p.buffer, logData)
 
 			if 0 < p.settings.RecordCycleMillis && GetCurrentTimeMillis()-p.lastRecordTimeMillis < p.settings.RecordCycleMillis {
 				//Cycle time not exceeded.
 				return nil
 			}
 
-			if err := p._UpdateSink(); nil != err {
-				return err
-			}
-
-			for _, v := range p.buffer {
-				//write log.
-				p.logFp.WriteString(v.log)
-
-				//Count up.
-				p._CountUpOnLogLevel(v.logLevel)
-			}
-
-			//init.
-			p.buffer = []_SloggerBuffer{}
-
-			//time update.
-			p.lastRecordTimeMillis = GetCurrentTimeMillis()
-			return nil
+			return p._RecordProcess()
 		},
 	)
+}
+
+func (p *Slogger) _RecordProcess() interface{} {
+	for n, v := range p.buffer {
+		if err := p._UpdateSink(v.currentTimeMillis); nil != err {
+			p.buffer = p.buffer[:n]
+			return err
+		}
+
+		//write log.
+		p.logFp.WriteString(v._toLogMessage())
+
+		//Count up.
+		p._CountUpOnLogLevel(v.logLevel)
+	}
+
+	//init.
+	p.buffer = []_SloggerBuffer{}
+
+	//time update.
+	p.lastRecordTimeMillis = GetCurrentTimeMillis()
+	return nil
 }
 
 func (p *Slogger) _CountUpOnLogLevel(logLevel LogLevel) {
@@ -182,8 +190,8 @@ func (p *Slogger) _CountUpOnLogLevel(logLevel LogLevel) {
 	}
 }
 
-func (p *Slogger) _UpdateSink() interface{} {
-	tm := GetTimeStamp(Normal)
+func (p *Slogger) _UpdateSink(currentTimeMillis int64) interface{} {
+	tm := ConvertTimeStamp(currentTimeMillis, Normal)
 	if p.currentTimeStamp == tm {
 		return nil
 	}
