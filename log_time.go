@@ -26,6 +26,10 @@ func GetCurrentTimeMillis() int64 {
 	return time.Now().Unix()
 }
 
+func GetCurrentTimeNanos() int64 {
+	return time.Now().UnixNano()
+}
+
 func GetTimeStamp(layout LogLayout) string {
 	return ConvertTimeStamp(time.Now().Unix(), layout)
 }

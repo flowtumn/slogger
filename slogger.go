@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 )
 
 type SloggerSettings struct {
@@ -29,15 +30,15 @@ type _SloggerBuffer struct {
 }
 
 type Slogger struct {
-	mutex                sync.Mutex
-	settings             SloggerSettings
-	count                SloggerOutputCount
-	buffer               []_SloggerBuffer
-	isRuning             bool
-	currentTimeStamp     string
-	lastRecordTimeMillis int64
-	logPath              string
-	logFp                *os.File
+	mutex               sync.Mutex
+	settings            SloggerSettings
+	count               SloggerOutputCount
+	buffer              []_SloggerBuffer
+	isRuning            bool
+	currentTimeStamp    string
+	lastRecordTimeNanos int64
+	logPath             string
+	logFp               *os.File
 }
 
 func _CreateLogFileName(prefix string, suffix string) string {
@@ -134,7 +135,7 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 	logData := _SloggerBuffer{
 		logLevel:          logLevel,
 		currentTimeMillis: GetCurrentTimeMillis(),
-		logMessage:        fmt.Sprintf(format, v...),
+		logMessage:        fmt.Sprintf(format, v...) + "\n",
 	}
 
 	p._SafeDo(
@@ -142,9 +143,15 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 			//Buffering.
 			p.buffer = append(p.buffer, logData)
 
-			if 0 < p.settings.RecordCycleMillis && GetCurrentTimeMillis()-p.lastRecordTimeMillis < p.settings.RecordCycleMillis {
-				//Cycle time not exceeded.
-				return nil
+			if 0 < p.settings.RecordCycleMillis {
+				if 0 == p.lastRecordTimeNanos {
+					p.lastRecordTimeNanos = GetCurrentTimeNanos()
+				}
+
+				if GetCurrentTimeNanos()-p.lastRecordTimeNanos <= (p.settings.RecordCycleMillis * (int64)(time.Millisecond)) {
+					//Cycle time not exceeded.
+					return nil
+				}
 			}
 
 			return p._RecordProcess()
@@ -170,7 +177,7 @@ func (p *Slogger) _RecordProcess() interface{} {
 	p.buffer = []_SloggerBuffer{}
 
 	//time update.
-	p.lastRecordTimeMillis = GetCurrentTimeMillis()
+	p.lastRecordTimeNanos = GetCurrentTimeNanos()
 	return nil
 }
 
