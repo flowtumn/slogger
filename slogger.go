@@ -7,10 +7,11 @@ import (
 )
 
 type SloggerSettings struct {
-	LogLevel     LogLevel
-	LogName      string
-	LogDirectory string
-	LogExtension string
+	LogLevel          LogLevel
+	LogName           string
+	LogDirectory      string
+	LogExtension      string
+	RecordCycleMillis int64
 }
 
 type SloggerOutputCount struct {
@@ -21,13 +22,20 @@ type SloggerOutputCount struct {
 	Debug    int64
 }
 
+type _SloggerBuffer struct {
+	currentTimeMillis int64
+	log               string
+}
+
 type Slogger struct {
-	mutex            sync.Mutex
-	settings         SloggerSettings
-	count            SloggerOutputCount
-	currentTimeStamp string
-	logPath          string
-	logFp            *os.File
+	mutex                sync.Mutex
+	settings             SloggerSettings
+	count                SloggerOutputCount
+	buffer               []_SloggerBuffer
+	currentTimeStamp     string
+	lastRecordTimeMillis int64
+	logPath              string
+	logFp                *os.File
 }
 
 func _CreateLogFileName(prefix string, suffix string) string {
@@ -105,6 +113,17 @@ func (p *Slogger) GetLogPath() *string {
 	return nil
 }
 
+func (p *Slogger) _CanRecord() bool {
+	if v, ok := p._SafeDo(
+		func() interface{} {
+			return GetCurrentTimeMillis()-p.lastRecordTimeMillis < p.settings.RecordCycleMillis
+		},
+	).(bool); ok {
+		return v
+	}
+	return false
+}
+
 //output log.
 func (p *Slogger) record(fs func(), logLevel LogLevel, format string, v ...interface{}) {
 	//filter to loglevel.
@@ -112,6 +131,9 @@ func (p *Slogger) record(fs func(), logLevel LogLevel, format string, v ...inter
 		return
 	}
 
+	// _ := GetTimeStamp(Full) + " " +
+	// 	logLevel.toStr() + " " +
+	// 	fmt.Sprintf(format, v...) + "\n"
 	if nil == p._UpdateSink() {
 		p._SafeDo(
 			func() interface{} {
@@ -124,6 +146,9 @@ func (p *Slogger) record(fs func(), logLevel LogLevel, format string, v ...inter
 
 				//Success.
 				fs()
+
+				//time update.
+				p.lastRecordTimeMillis = GetCurrentTimeMillis()
 				return nil
 			},
 		)

@@ -14,11 +14,18 @@ var logLayoutTable = map[LogLayout]string{
 	Full:   "2006-01-02 15:04:05",
 }
 
-func GetTimeStamp(layout LogLayout) string {
-	day := time.Now()
-	return day.Format(
+func ConvertTimeStamp(currentTime int64, layout LogLayout) string {
+	return time.Unix(currentTime, 0).Format(
 		func() string {
 			return logLayoutTable[layout]
 		}(),
 	)
+}
+
+func GetCurrentTimeMillis() int64 {
+	return time.Now().Unix()
+}
+
+func GetTimeStamp(layout LogLayout) string {
+	return ConvertTimeStamp(time.Now().Unix(), layout)
 }
