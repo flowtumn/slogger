@@ -21,10 +21,11 @@ func _writeLog(p *Slogger) {
 
 func Test_SLogger_Base(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:     WARN,
-		LogName:      "dummy1",
-		LogDirectory: "dumym2",
-		LogExtension: "log",
+		LogLevel:          WARN,
+		LogName:           "dummy1",
+		LogDirectory:      "dumym2",
+		LogExtension:      "log",
+		RecordCycleMillis: 0,
 	}
 	r := Slogger{}
 
@@ -42,10 +43,11 @@ func Test_SLogger_Base(t *testing.T) {
 
 func Test_SLogger_Debug(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:     DEBUG,
-		LogName:      "TEST",
-		LogDirectory: "./",
-		LogExtension: "log",
+		LogLevel:          DEBUG,
+		LogName:           "TEST",
+		LogDirectory:      "./",
+		LogExtension:      "log",
+		RecordCycleMillis: 0,
 	}
 
 	r := Slogger{}
@@ -75,10 +77,11 @@ func Test_SLogger_Debug(t *testing.T) {
 
 func Test_SLogger_Info(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:     INFO,
-		LogName:      "TEST",
-		LogDirectory: "./",
-		LogExtension: "log",
+		LogLevel:          INFO,
+		LogName:           "TEST",
+		LogDirectory:      "./",
+		LogExtension:      "log",
+		RecordCycleMillis: 0,
 	}
 
 	r := Slogger{}
@@ -107,10 +110,11 @@ func Test_SLogger_Info(t *testing.T) {
 
 func Test_SLogger_WARN(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:     WARN,
-		LogName:      "TEST",
-		LogDirectory: "./",
-		LogExtension: "log",
+		LogLevel:          WARN,
+		LogName:           "TEST",
+		LogDirectory:      "./",
+		LogExtension:      "log",
+		RecordCycleMillis: 0,
 	}
 
 	r := Slogger{}
@@ -139,10 +143,11 @@ func Test_SLogger_WARN(t *testing.T) {
 
 func Test_SLogger_Error(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:     ERROR,
-		LogName:      "TEST",
-		LogDirectory: "./",
-		LogExtension: "log",
+		LogLevel:          ERROR,
+		LogName:           "TEST",
+		LogDirectory:      "./",
+		LogExtension:      "log",
+		RecordCycleMillis: 0,
 	}
 
 	r := Slogger{}
@@ -171,10 +176,11 @@ func Test_SLogger_Error(t *testing.T) {
 
 func Test_SLogger_Critical(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:     CRITICAL,
-		LogName:      "TEST",
-		LogDirectory: "./",
-		LogExtension: "log",
+		LogLevel:          CRITICAL,
+		LogName:           "TEST",
+		LogDirectory:      "./",
+		LogExtension:      "log",
+		RecordCycleMillis: 0,
 	}
 
 	r := Slogger{}
