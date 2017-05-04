@@ -22,9 +22,6 @@ slogger.SloggerSettings{
     LogName:           "EXAMPLE-SLOGGER",   // Loggerの名前。
     LogDirectory:      "/tmp/",             // Log出力先。
     LogExtension:      "log",               // Logの拡張子。
-    RecordCycleMillis: 10000,               // 書き込む周期(単位ms)。仮に10000ms(10秒)なら
-                                            // 最後に書き込まれてから、10秒未満はメモリ上にバッファリングされ
-                                            // 10秒以降後のRecord操作時に纏めてフラッシュされます。
 }
 ```
 
@@ -49,12 +46,11 @@ func main() {
             LogName:           "EXAMPLE-SLOGGER",
             LogDirectory:      "/tmp/",
             LogExtension:      "log",
-            RecordCycleMillis: 0,   // 即記録。
         },
     )
 
     defer func() {
-        //Closeで、中に蓄積しているlogはflush
+        //Closeを呼びlogをflush
         r.Close()
     }()
 
