@@ -10,7 +10,11 @@ import (
 	"time"
 )
 
-func _writeLog(p *Slogger) {
+const (
+	DEFAULT_TEST_WAIT_TIMES = 500 * time.Millisecond
+)
+
+func _writeLog(p *Slogger, waitTimes time.Duration) {
 	if nil == p {
 		return
 	}
@@ -20,15 +24,18 @@ func _writeLog(p *Slogger) {
 	(*p).Warn("WARN %s", "warn message")
 	(*p).Error("ERROR")
 	(*p).Critical("Critical %+v", errors.New("Critical"))
+
+	if 0 < waitTimes {
+		time.Sleep(waitTimes)
+	}
 }
 
 func Test_SLogger_Base(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:          WARN,
-		LogName:           "dummy1",
-		LogDirectory:      "dumym2",
-		LogExtension:      "log",
-		RecordCycleMillis: 0,
+		LogLevel:     WARN,
+		LogName:      "dummy1",
+		LogDirectory: "dumym2",
+		LogExtension: "log",
 	}
 	r := Slogger{}
 
@@ -44,13 +51,41 @@ func Test_SLogger_Base(t *testing.T) {
 
 }
 
+func Test_SLogger_Close(t *testing.T) {
+	DATA := SloggerSettings{
+		LogLevel:     WARN,
+		LogName:      "dummy1",
+		LogDirectory: "dumym2",
+		LogExtension: "log",
+	}
+	r := Slogger{}
+
+	r.Initialize(DATA)
+	r.Close()
+
+	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
+
+	//Close後に記録されてはいけない
+	if !reflect.DeepEqual(
+		*r.Counters(),
+		SloggerOutputCount{
+			Critical: 0,
+			Error:    0,
+			Warn:     0,
+			Info:     0,
+			Debug:    0,
+		},
+	) {
+		t.Errorf("It is written after closed.")
+	}
+}
+
 func Test_SLogger_Debug(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:          DEBUG,
-		LogName:           "TEST",
-		LogDirectory:      "./",
-		LogExtension:      "log",
-		RecordCycleMillis: 0,
+		LogLevel:     DEBUG,
+		LogName:      "TEST",
+		LogDirectory: "./",
+		LogExtension: "log",
 	}
 
 	r := Slogger{}
@@ -61,7 +96,7 @@ func Test_SLogger_Debug(t *testing.T) {
 	}()
 
 	r.Initialize(DATA)
-	_writeLog(&r)
+	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	//Debugなら、全て記録される。
 	if !reflect.DeepEqual(
@@ -80,11 +115,10 @@ func Test_SLogger_Debug(t *testing.T) {
 
 func Test_SLogger_Info(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:          INFO,
-		LogName:           "TEST",
-		LogDirectory:      "./",
-		LogExtension:      "log",
-		RecordCycleMillis: 0,
+		LogLevel:     INFO,
+		LogName:      "TEST",
+		LogDirectory: "./",
+		LogExtension: "log",
 	}
 
 	r := Slogger{}
@@ -95,7 +129,7 @@ func Test_SLogger_Info(t *testing.T) {
 	}()
 
 	r.Initialize(DATA)
-	_writeLog(&r)
+	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
@@ -113,11 +147,10 @@ func Test_SLogger_Info(t *testing.T) {
 
 func Test_SLogger_WARN(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:          WARN,
-		LogName:           "TEST",
-		LogDirectory:      "./",
-		LogExtension:      "log",
-		RecordCycleMillis: 0,
+		LogLevel:     WARN,
+		LogName:      "TEST",
+		LogDirectory: "./",
+		LogExtension: "log",
 	}
 
 	r := Slogger{}
@@ -128,7 +161,7 @@ func Test_SLogger_WARN(t *testing.T) {
 	}()
 
 	r.Initialize(DATA)
-	_writeLog(&r)
+	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
@@ -146,11 +179,10 @@ func Test_SLogger_WARN(t *testing.T) {
 
 func Test_SLogger_Error(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:          ERROR,
-		LogName:           "TEST",
-		LogDirectory:      "./",
-		LogExtension:      "log",
-		RecordCycleMillis: 0,
+		LogLevel:     ERROR,
+		LogName:      "TEST",
+		LogDirectory: "./",
+		LogExtension: "log",
 	}
 
 	r := Slogger{}
@@ -161,7 +193,7 @@ func Test_SLogger_Error(t *testing.T) {
 	}()
 
 	r.Initialize(DATA)
-	_writeLog(&r)
+	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
@@ -179,11 +211,10 @@ func Test_SLogger_Error(t *testing.T) {
 
 func Test_SLogger_Critical(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:          CRITICAL,
-		LogName:           "TEST",
-		LogDirectory:      "./",
-		LogExtension:      "log",
-		RecordCycleMillis: 0,
+		LogLevel:     CRITICAL,
+		LogName:      "TEST",
+		LogDirectory: "./",
+		LogExtension: "log",
 	}
 
 	r := Slogger{}
@@ -194,7 +225,7 @@ func Test_SLogger_Critical(t *testing.T) {
 	}()
 
 	r.Initialize(DATA)
-	_writeLog(&r)
+	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
@@ -211,142 +242,14 @@ func Test_SLogger_Critical(t *testing.T) {
 
 }
 
-func Test_SLogger_Cycle_1sec(t *testing.T) {
-	DATA := SloggerSettings{
-		LogLevel:          DEBUG,
-		LogName:           "TEST",
-		LogDirectory:      "./",
-		LogExtension:      "log",
-		RecordCycleMillis: 1000, //Cycle 1sec.
-	}
-	WRITE_COUNT := (int64)(10)
-	TEST_CHECK := SloggerOutputCount{
-		Critical: WRITE_COUNT,
-		Error:    WRITE_COUNT,
-		Warn:     WRITE_COUNT,
-		Info:     WRITE_COUNT,
-		Debug:    WRITE_COUNT,
-	}
-
-	r := Slogger{}
-
-	defer func() {
-		r.Close()
-		os.Remove(*r.GetLogPath())
-	}()
-
-	r.Initialize(DATA)
-	for i := 0; i < (int)(WRITE_COUNT); i++ {
-		_writeLog(&r)
-	}
-
-	if !reflect.DeepEqual(
-		*r.Counters(),
-		SloggerOutputCount{
-			Critical: 0,
-			Error:    0,
-			Warn:     0,
-			Info:     0,
-			Debug:    0,
-		},
-	) {
-		t.Errorf("Record is NG.")
-	}
-
-	//1秒待ってから、再度書き込み。
-	time.Sleep(1 * time.Second)
-
-	//Debugの記録時にcycleを見るので、Debugだけが書き込んだ回数は1多い
-	r.Debug("first")
-	TEST_CHECK.Debug++
-
-	r.Info("Second")
-
-	if !reflect.DeepEqual(
-		*r.Counters(),
-		TEST_CHECK,
-	) {
-		t.Errorf("Output count does not match. case 1.")
-	}
-
-	TEST_CHECK.Info++
-
-	//1秒待ってから、再度書き込み。
-	time.Sleep(1 * time.Second)
-
-	r.Warn("Third")
-	TEST_CHECK.Warn++
-
-	if !reflect.DeepEqual(
-		*r.Counters(),
-		TEST_CHECK,
-	) {
-		t.Errorf("Output count does not match. case 2.")
-	}
-}
-
-func Test_SLogger_Cycle_100sec(t *testing.T) {
-	DATA := SloggerSettings{
-		LogLevel:          DEBUG,
-		LogName:           "TEST",
-		LogDirectory:      "./",
-		LogExtension:      "log",
-		RecordCycleMillis: 100000, //Cycle 100sec.
-	}
-	WRITE_COUNT := (int64)(1234)
-	TEST_CHECK := SloggerOutputCount{
-		Critical: WRITE_COUNT,
-		Error:    WRITE_COUNT,
-		Warn:     WRITE_COUNT,
-		Info:     WRITE_COUNT,
-		Debug:    WRITE_COUNT,
-	}
-
-	r := Slogger{}
-
-	defer func() {
-		r.Close()
-		os.Remove(*r.GetLogPath())
-	}()
-
-	r.Initialize(DATA)
-	for i := 0; i < (int)(WRITE_COUNT); i++ {
-		_writeLog(&r)
-	}
-
-	if !reflect.DeepEqual(
-		*r.Counters(),
-		SloggerOutputCount{
-			Critical: 0,
-			Error:    0,
-			Warn:     0,
-			Info:     0,
-			Debug:    0,
-		},
-	) {
-		t.Errorf("Record is NG.")
-	}
-
-	//Flush
-	r.Close()
-
-	if !reflect.DeepEqual(
-		*r.Counters(),
-		TEST_CHECK,
-	) {
-		t.Errorf("Output count does not match.")
-	}
-}
-
 func Test_SLogger_MT(t *testing.T) {
 	DATA := SloggerSettings{
-		LogLevel:          DEBUG,
-		LogName:           "TEST",
-		LogDirectory:      "./",
-		LogExtension:      "log",
-		RecordCycleMillis: 1000000, //Cycle 1000sec.
+		LogLevel:     DEBUG,
+		LogName:      "TEST",
+		LogDirectory: "./",
+		LogExtension: "log",
 	}
-	WORKER_COUNT := (int64)(4)
+	WORKER_COUNT := (int64)(8)
 	genRand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var TEST_CHECK = SloggerOutputCount{}
 
@@ -373,26 +276,14 @@ func Test_SLogger_MT(t *testing.T) {
 
 		go func(writeCount int) {
 			for ii := 0; ii < writeCount; ii++ {
-				_writeLog(&r)
+				//Wait無しで書き込み続ける
+				_writeLog(&r, 0)
 			}
 			waiter.Done()
 		}((int)(count))
 	}
 
 	waiter.Wait()
-
-	if !reflect.DeepEqual(
-		*r.Counters(),
-		SloggerOutputCount{
-			Critical: 0,
-			Error:    0,
-			Warn:     0,
-			Info:     0,
-			Debug:    0,
-		},
-	) {
-		t.Errorf("Record is NG.")
-	}
 
 	//Flush
 	r.Close()

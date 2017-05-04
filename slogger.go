@@ -1,20 +1,19 @@
 package slogger
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
-	"time"
 )
 
 type SloggerSettings struct {
-	LogLevel          LogLevel
-	LogName           string
-	LogDirectory      string
-	LogExtension      string
-	RecordCycleMillis int64
+	LogLevel     LogLevel
+	LogName      string
+	LogDirectory string
+	LogExtension string
 }
 
 type SloggerOutputCount struct {
@@ -25,17 +24,11 @@ type SloggerOutputCount struct {
 	Critical int64
 }
 
-type _SloggerBuffer struct {
-	logLevel          LogLevel
-	currentTimeMillis int64
-	logMessage        string
-}
-
 type Slogger struct {
 	mutex               sync.Mutex
 	settings            SloggerSettings
 	count               SloggerOutputCount
-	buffer              []_SloggerBuffer
+	task                *_SloggerWorker
 	isRuning            bool
 	currentTimeStamp    string
 	lastRecordTimeNanos int64
@@ -45,10 +38,6 @@ type Slogger struct {
 
 func _CreateLogFileName(prefix string, suffix string) string {
 	return prefix + "-" + GetTimeStamp(Normal) + "." + suffix
-}
-
-func (p *_SloggerBuffer) _toLogMessage() string {
-	return ConvertTimeStamp(p.currentTimeMillis, Full) + " " + p.logLevel.toStr() + " " + p.logMessage
 }
 
 func (p *Slogger) _SafeDo(f func() interface{}) interface{} {
@@ -61,16 +50,22 @@ func (p *Slogger) _SafeDo(f func() interface{}) interface{} {
 }
 
 func (p *Slogger) Initialize(settings SloggerSettings) {
+	p.Close()
+
 	p._SafeDo(
 		func() interface{} {
 			p.settings = settings
 			p.count = SloggerOutputCount{}
-			p.buffer = []_SloggerBuffer{}
 			p.isRuning = false
-			if nil != p.logFp {
-				p.logFp.Close()
-				p.logFp = nil
-			}
+			p.logFp = nil
+
+			//Create Worker.
+			p.task = _CreateSloggerWorker(
+				func(buf *_SloggerData) {
+					p._RecordProcess(buf)
+				},
+			)
+
 			return nil
 		},
 	)
@@ -79,8 +74,10 @@ func (p *Slogger) Initialize(settings SloggerSettings) {
 func (p *Slogger) Close() {
 	p._SafeDo(
 		func() interface{} {
-			//Flush.
-			p._RecordProcess()
+			if nil != p.task {
+				p.task._Shutdown()
+				p.task = nil
+			}
 
 			if nil != p.logFp {
 				p.logFp.Close()
@@ -136,52 +133,39 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 
 	fileName, fileLine := _GetFileInfoFromStack(3)
 
-	logData := _SloggerBuffer{
-		logLevel:          logLevel,
-		currentTimeMillis: GetCurrentTimeMillis(),
-		logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...) + "\n",
-	}
-
 	p._SafeDo(
 		func() interface{} {
-			//Buffering.
-			p.buffer = append(p.buffer, logData)
-
-			if 0 < p.settings.RecordCycleMillis {
-				if 0 == p.lastRecordTimeNanos {
-					p.lastRecordTimeNanos = GetCurrentTimeNanos()
-				}
-
-				if GetCurrentTimeNanos()-p.lastRecordTimeNanos <= (p.settings.RecordCycleMillis * (int64)(time.Millisecond)) {
-					//Cycle time not exceeded.
-					return nil
-				}
+			//Enqueue.
+			if nil != p.task {
+				p.task._Offer(&_SloggerData{
+					logLevel:          logLevel,
+					currentTimeMillis: GetCurrentTimeMillis(),
+					logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...) + "\n",
+				})
+				return nil
+			} else {
+				return errors.New("task is nil.")
 			}
-
-			return p._RecordProcess()
 		},
 	)
 }
 
-func (p *Slogger) _RecordProcess() interface{} {
-	for n, v := range p.buffer {
-		if err := p._UpdateSink(v.currentTimeMillis); nil != err {
-			p.buffer = p.buffer[:n]
-			return err
-		}
-
-		//write log.
-		p.logFp.WriteString(v._toLogMessage())
-
-		//Count up.
-		p._CountUpOnLogLevel(v.logLevel)
+func (p *Slogger) _RecordProcess(v *_SloggerData) interface{} {
+	if nil == v {
+		return errors.New("SloggerBuffer is nil.")
 	}
 
-	//init.
-	p.buffer = []_SloggerBuffer{}
+	if err := p._UpdateSink(v.currentTimeMillis); nil != err {
+		return err
+	}
 
-	//time update.
-	p.lastRecordTimeNanos = GetCurrentTimeNanos()
+	//Log write.
+	if _, err := p.logFp.WriteString(v._toLogMessage()); nil != err {
+		return err
+	}
+
+	p._CountUpOnLogLevel(v.logLevel)
+
 	return nil
 }
 
