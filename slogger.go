@@ -10,11 +10,10 @@ import (
 )
 
 type SloggerSettings struct {
-	LogLevel          LogLevel
-	LogName           string
-	LogDirectory      string
-	LogExtension      string
-	RecordCycleMillis int64
+	LogLevel     LogLevel
+	LogName      string
+	LogDirectory string
+	LogExtension string
 }
 
 type SloggerOutputCount struct {
@@ -134,12 +133,21 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 
 	fileName, fileLine := _GetFileInfoFromStack(3)
 
-	//Enqueue.
-	p.task.queue <- &_SloggerData{
-		logLevel:          logLevel,
-		currentTimeMillis: GetCurrentTimeMillis(),
-		logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...) + "\n",
-	}
+	p._SafeDo(
+		func() interface{} {
+			//Enqueue.
+			if nil != p.task {
+				p.task._Offer(&_SloggerData{
+					logLevel:          logLevel,
+					currentTimeMillis: GetCurrentTimeMillis(),
+					logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...) + "\n",
+				})
+				return nil
+			} else {
+				return errors.New("task is nil.")
+			}
+		},
+	)
 }
 
 func (p *Slogger) _RecordProcess(v *_SloggerData) interface{} {
