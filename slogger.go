@@ -21,6 +21,7 @@ type Slogger struct {
 	settings            SloggerSettings
 	count               SloggerRecordCount
 	task                *_SloggerWorker
+	processor           *SloggerProcessor
 	isRuning            bool
 	currentTimeStamp    string
 	lastRecordTimeNanos int64
@@ -41,7 +42,7 @@ func (p *Slogger) _SafeDo(f func() interface{}) interface{} {
 	return f()
 }
 
-func (p *Slogger) Initialize(settings SloggerSettings) {
+func (p *Slogger) Initialize(settings SloggerSettings, processor *SloggerProcessor) {
 	p.Close()
 
 	p._SafeDo(
@@ -51,10 +52,14 @@ func (p *Slogger) Initialize(settings SloggerSettings) {
 			p.isRuning = false
 			p.logFp = nil
 
+			p.processor = processor
+
 			//Create Worker.
 			p.task = _CreateSloggerWorker(
-				func(buf *_SloggerData) {
-					p._RecordProcess(buf)
+				func(buf *SloggerData) {
+					if nil != p.processor {
+						(*p.processor).Record(buf)
+					}
 				},
 			)
 
@@ -71,10 +76,11 @@ func (p *Slogger) Close() {
 				p.task = nil
 			}
 
-			if nil != p.logFp {
-				p.logFp.Close()
-				p.logFp = nil
+			if nil != p.processor {
+				(*p.processor).Shutdown()
+				p.processor = nil
 			}
+
 			return nil
 		},
 	)
@@ -107,12 +113,14 @@ func (p *Slogger) Counters() *SloggerRecordCount {
 func (p *Slogger) GetLogPath() *string {
 	if v, ok := p._SafeDo(
 		func() interface{} {
-			return p.logPath
+			if nil != p.processor {
+				return (*p.processor).GetLogPath()
+			}
+			return nil
 		},
-	).(string); ok {
-		return &v
+	).(*string); ok {
+		return v
 	}
-
 	return nil
 }
 
@@ -129,7 +137,7 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 		func() interface{} {
 			//Enqueue.
 			if nil != p.task {
-				p.task._Offer(&_SloggerData{
+				p.task._Offer(&SloggerData{
 					logLevel:          logLevel,
 					currentTimeMillis: GetCurrentTimeMillis(),
 					logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...) + "\n",
@@ -142,7 +150,7 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 	)
 }
 
-func (p *Slogger) _RecordProcess(v *_SloggerData) interface{} {
+func (p *Slogger) _RecordProcess(v *SloggerData) interface{} {
 	if nil == v {
 		return errors.New("SloggerBuffer is nil.")
 	}

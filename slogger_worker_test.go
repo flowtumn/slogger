@@ -6,7 +6,7 @@ import (
 )
 
 func Test_SLogger_Worker_Base(t *testing.T) {
-	DATA := _SloggerData{
+	DATA := SloggerData{
 		logLevel:          CRITICAL,
 		currentTimeMillis: 12345,
 		logMessage:        "TEST",
@@ -15,7 +15,7 @@ func Test_SLogger_Worker_Base(t *testing.T) {
 	var called = 0
 
 	worker := _CreateSloggerWorker(
-		func(v *_SloggerData) {
+		func(v *SloggerData) {
 			called = called + 1
 			if nil != v && reflect.DeepEqual(*v, DATA) {
 				return

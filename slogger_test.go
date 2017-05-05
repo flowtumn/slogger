@@ -43,7 +43,7 @@ func Test_SLogger_Base(t *testing.T) {
 		t.Errorf("It is equal to DATA. This is incorrect")
 	}
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorNormal())
 
 	if !reflect.DeepEqual(*r.Settings(), DATA) {
 		t.Errorf("Settings must be DATA.")
@@ -60,7 +60,7 @@ func Test_SLogger_Close(t *testing.T) {
 	}
 	r := Slogger{}
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorNormal())
 	r.Close()
 
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
@@ -95,7 +95,7 @@ func Test_SLogger_Debug(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorNormal())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	//Debugなら、全て記録される。
@@ -128,7 +128,7 @@ func Test_SLogger_Info(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorNormal())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
@@ -160,7 +160,7 @@ func Test_SLogger_WARN(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorNormal())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
@@ -192,7 +192,7 @@ func Test_SLogger_Error(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorNormal())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
@@ -224,7 +224,7 @@ func Test_SLogger_Critical(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorNormal())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
@@ -260,7 +260,7 @@ func Test_SLogger_MT(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorNormal())
 
 	var waiter sync.WaitGroup
 	for i := 0; i < (int)(WORKER_COUNT); i++ {

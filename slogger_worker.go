@@ -4,14 +4,14 @@ import "sync"
 
 type _SloggerWorker struct {
 	wg      sync.WaitGroup
-	queue   chan *_SloggerData
-	handler func(*_SloggerData)
+	queue   chan *SloggerData
+	handler func(*SloggerData)
 	running AtomicBool
 }
 
-func _CreateSloggerWorker(handler func(*_SloggerData)) *_SloggerWorker {
+func _CreateSloggerWorker(handler func(*SloggerData)) *_SloggerWorker {
 	p := &_SloggerWorker{
-		queue:   make(chan *_SloggerData, 1),
+		queue:   make(chan *SloggerData, 1),
 		handler: handler,
 	}
 	p._DoWork()
@@ -24,7 +24,7 @@ func (p *_SloggerWorker) _DoWork() {
 	p.running.Set(true)
 }
 
-func (p *_SloggerWorker) _Offer(v *_SloggerData) bool {
+func (p *_SloggerWorker) _Offer(v *SloggerData) bool {
 	if !p.running.Get() {
 		return false
 	}

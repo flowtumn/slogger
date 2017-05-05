@@ -1,11 +1,11 @@
 package slogger
 
-type _SloggerData struct {
-	logLevel          LogLevel
+type SloggerData struct {
 	currentTimeMillis int64
+	logLevel          LogLevel
 	logMessage        string
 }
 
-func (p *_SloggerData) _toLogMessage() string {
+func (p *SloggerData) _toLogMessage() string {
 	return ConvertTimeStamp(p.currentTimeMillis, Full) + " " + p.logLevel.toStr() + " " + p.logMessage
 }
