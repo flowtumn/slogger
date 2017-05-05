@@ -12,7 +12,7 @@ func Test_SLogger_Data_Base(t *testing.T) {
 		logLevel:          INFO,
 		currentTimeMillis: 0,
 		logMessage:        "TEST",
-	})._toLogMessage()) {
+	}).ToLogMessage()) {
 		t.Errorf("Broken log message.")
 	}
 }

@@ -19,8 +19,9 @@ func (self *_TestProcessor) GetLogPath() *string {
 	return &r
 }
 
-func (self *_TestProcessor) Record(*SloggerData) {
+func (self *_TestProcessor) Record(*SloggerData) error {
 	self.callRecord = self.callRecord + 1
+	return nil
 }
 
 func (self *_TestProcessor) Shutdown() {

@@ -6,6 +6,6 @@ type SloggerData struct {
 	logMessage        string
 }
 
-func (p *SloggerData) _toLogMessage() string {
+func (p *SloggerData) ToLogMessage() string {
 	return ConvertTimeStamp(p.currentTimeMillis, Full) + " " + p.logLevel.toStr() + " " + p.logMessage
 }

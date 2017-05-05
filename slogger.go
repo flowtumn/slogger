@@ -17,16 +17,14 @@ type SloggerSettings struct {
 }
 
 type Slogger struct {
-	mutex               sync.Mutex
-	settings            SloggerSettings
-	count               SloggerRecordCount
-	task                *_SloggerWorker
-	processor           *SloggerProcessor
-	isRuning            bool
-	currentTimeStamp    string
-	lastRecordTimeNanos int64
-	logPath             string
-	logFp               *os.File
+	mutex            sync.Mutex
+	settings         SloggerSettings
+	count            SloggerRecordCount
+	task             *_SloggerWorker
+	processor        *SloggerProcessor
+	isRuning         bool
+	currentTimeStamp string
+	logFp            *os.File
 }
 
 func _CreateLogFileName(prefix string, suffix string) string {
@@ -42,30 +40,37 @@ func (p *Slogger) _SafeDo(f func() interface{}) interface{} {
 	return f()
 }
 
-func (p *Slogger) Initialize(settings SloggerSettings, processor *SloggerProcessor) {
+func (p *Slogger) Initialize(settings SloggerSettings, processor *SloggerProcessor) error {
+	if nil == processor {
+		return errors.New("Initialize failed. beacuse processor is nil.")
+	}
+
 	p.Close()
 
-	p._SafeDo(
+	if r, ok := p._SafeDo(
 		func() interface{} {
 			p.settings = settings
 			p.count = SloggerRecordCount{}
 			p.isRuning = false
-			p.logFp = nil
-
 			p.processor = processor
 
 			//Create Worker.
 			p.task = _CreateSloggerWorker(
 				func(buf *SloggerData) {
-					if nil != p.processor {
-						(*p.processor).Record(buf)
+					if nil == (*p.processor).Record(buf) {
+						//Record success.
+						p.count._CountUpOnLogLevel(buf.logLevel)
 					}
 				},
 			)
 
 			return nil
 		},
-	)
+	).(error); ok {
+		return r
+	}
+
+	return nil
 }
 
 func (p *Slogger) Close() {
@@ -148,46 +153,6 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 			}
 		},
 	)
-}
-
-func (p *Slogger) _RecordProcess(v *SloggerData) interface{} {
-	if nil == v {
-		return errors.New("SloggerBuffer is nil.")
-	}
-
-	if err := p._UpdateSink(v.currentTimeMillis); nil != err {
-		return err
-	}
-
-	//Log write.
-	if _, err := p.logFp.WriteString(v._toLogMessage()); nil != err {
-		return err
-	}
-
-	p.count._CountUpOnLogLevel(v.logLevel)
-
-	return nil
-}
-
-func (p *Slogger) _UpdateSink(currentTimeMillis int64) interface{} {
-	tm := ConvertTimeStamp(currentTimeMillis, Normal)
-	if p.currentTimeStamp == tm {
-		return nil
-	}
-
-	//Update a currentTimeStamp.
-	p.currentTimeStamp = tm
-	if nil != p.logFp {
-		p.logFp.Close()
-	}
-
-	p.logPath = _CreateLogFileName(p.settings.LogName, p.settings.LogExtension)
-	if fp, err := os.OpenFile(p.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); nil == err {
-		p.logFp = fp
-		return nil
-	} else {
-		return err
-	}
 }
 
 func (p *Slogger) Critical(format string, v ...interface{}) {
