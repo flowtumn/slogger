@@ -16,18 +16,10 @@ type SloggerSettings struct {
 	LogExtension string
 }
 
-type SloggerOutputCount struct {
-	Debug    int64
-	Info     int64
-	Warn     int64
-	Error    int64
-	Critical int64
-}
-
 type Slogger struct {
 	mutex               sync.Mutex
 	settings            SloggerSettings
-	count               SloggerOutputCount
+	count               SloggerRecordCount
 	task                *_SloggerWorker
 	isRuning            bool
 	currentTimeStamp    string
@@ -55,7 +47,7 @@ func (p *Slogger) Initialize(settings SloggerSettings) {
 	p._SafeDo(
 		func() interface{} {
 			p.settings = settings
-			p.count = SloggerOutputCount{}
+			p.count = SloggerRecordCount{}
 			p.isRuning = false
 			p.logFp = nil
 
@@ -100,12 +92,12 @@ func (p *Slogger) Settings() *SloggerSettings {
 	return nil
 }
 
-func (p *Slogger) Counters() *SloggerOutputCount {
+func (p *Slogger) Counters() *SloggerRecordCount {
 	if v, ok := p._SafeDo(
 		func() interface{} {
 			return p.count
 		},
-	).(SloggerOutputCount); ok {
+	).(SloggerRecordCount); ok {
 		return &v
 	}
 
@@ -164,25 +156,9 @@ func (p *Slogger) _RecordProcess(v *_SloggerData) interface{} {
 		return err
 	}
 
-	p._CountUpOnLogLevel(v.logLevel)
+	p.count._CountUpOnLogLevel(v.logLevel)
 
 	return nil
-}
-
-func (p *Slogger) _CountUpOnLogLevel(logLevel LogLevel) {
-	switch logLevel {
-	default:
-	case DEBUG:
-		p.count.Debug = p.count.Debug + 1
-	case INFO:
-		p.count.Info = p.count.Info + 1
-	case WARN:
-		p.count.Warn = p.count.Warn + 1
-	case ERROR:
-		p.count.Error = p.count.Error + 1
-	case CRITICAL:
-		p.count.Critical = p.count.Critical + 1
-	}
 }
 
 func (p *Slogger) _UpdateSink(currentTimeMillis int64) interface{} {

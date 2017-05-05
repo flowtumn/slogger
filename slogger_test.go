@@ -68,7 +68,7 @@ func Test_SLogger_Close(t *testing.T) {
 	//Close後に記録されてはいけない
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 0,
 			Error:    0,
 			Warn:     0,
@@ -101,7 +101,7 @@ func Test_SLogger_Debug(t *testing.T) {
 	//Debugなら、全て記録される。
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
 			Warn:     1,
@@ -109,7 +109,7 @@ func Test_SLogger_Debug(t *testing.T) {
 			Debug:    1,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 }
 
@@ -133,7 +133,7 @@ func Test_SLogger_Info(t *testing.T) {
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
 			Warn:     1,
@@ -141,7 +141,7 @@ func Test_SLogger_Info(t *testing.T) {
 			Debug:    0,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 }
 
@@ -165,7 +165,7 @@ func Test_SLogger_WARN(t *testing.T) {
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
 			Warn:     1,
@@ -173,7 +173,7 @@ func Test_SLogger_WARN(t *testing.T) {
 			Debug:    0,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 }
 
@@ -197,7 +197,7 @@ func Test_SLogger_Error(t *testing.T) {
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
 			Warn:     0,
@@ -205,7 +205,7 @@ func Test_SLogger_Error(t *testing.T) {
 			Debug:    0,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 }
 
@@ -229,7 +229,7 @@ func Test_SLogger_Critical(t *testing.T) {
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    0,
 			Warn:     0,
@@ -237,7 +237,7 @@ func Test_SLogger_Critical(t *testing.T) {
 			Debug:    0,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 
 }
@@ -251,7 +251,7 @@ func Test_SLogger_MT(t *testing.T) {
 	}
 	WORKER_COUNT := (int64)(8)
 	genRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	var TEST_CHECK = SloggerOutputCount{}
+	var TEST_CHECK = SloggerRecordCount{}
 
 	r := Slogger{}
 
@@ -292,6 +292,6 @@ func Test_SLogger_MT(t *testing.T) {
 		*r.Counters(),
 		TEST_CHECK,
 	) {
-		t.Errorf("Output count does not match. Actual: %+v,  Expected: %+v", *r.Counters(), TEST_CHECK)
+		t.Errorf("Record count does not match. Actual: %+v,  Expected: %+v", *r.Counters(), TEST_CHECK)
 	}
 }
