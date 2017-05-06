@@ -53,7 +53,7 @@ func (self *Slogger) Initialize(settings SloggerSettings, processor *SloggerProc
 				func(buf *SloggerData) {
 					if nil == (*self.processor).Record(self.settings, buf) {
 						//Record success.
-						self.count._CountUpOnLogLevel(buf.logLevel)
+						self.count._CountUpOnLogLevel(buf.LogLevel)
 
 						//Update logpath.
 						if v := (*self.processor).GetLogPath(); nil != v {
@@ -140,9 +140,11 @@ func (self *Slogger) record(logLevel LogLevel, format string, v ...interface{}) 
 			if nil != self.task {
 				self.task._Offer(
 					&SloggerData{
-						logLevel:          logLevel,
-						currentTimeMillis: GetCurrentTimeMillis(),
-						logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...),
+						CurrentTimeMillis: GetCurrentTimeMillis(),
+						LogLevel:          logLevel,
+						LogMessage:        fmt.Sprintf(format, v...),
+						SourceName:        fileName,
+						SourceLine:        fileLine,
 					},
 				)
 				return nil

@@ -18,7 +18,7 @@ func (self *SloggerProcessorFile) GetLogPath() *string {
 }
 
 func (self *SloggerProcessorFile) Record(setting SloggerSettings, data *SloggerData) error {
-	if err := self._UpdateSink(&setting, data.currentTimeMillis); nil != err {
+	if err := self._UpdateSink(&setting, data.CurrentTimeMillis); nil != err {
 		return err
 	}
 

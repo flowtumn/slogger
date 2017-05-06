@@ -7,9 +7,9 @@ import (
 
 func Test_SLogger_Worker_Base(t *testing.T) {
 	DATA := SloggerData{
-		logLevel:          CRITICAL,
-		currentTimeMillis: 12345,
-		logMessage:        "TEST",
+		CurrentTimeMillis: 12345,
+		LogLevel:          CRITICAL,
+		LogMessage:        "TEST",
 	}
 	REPEAT := 10
 	var called = 0

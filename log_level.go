@@ -3,7 +3,7 @@ package slogger
 type LogLevel int32
 
 const (
-	DEBUG LogLevel = iota
+	DEBUG LogLevel = iota + 1
 	INFO
 	WARN
 	ERROR
@@ -18,7 +18,7 @@ var logLevelTable = map[LogLevel]string{
 	CRITICAL: "[CRITICAL]",
 }
 
-func (v LogLevel) toStr() string {
+func (v LogLevel) ToString() string {
 	if v, ok := logLevelTable[v]; ok {
 		return v
 	}
