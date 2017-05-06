@@ -9,13 +9,6 @@ import (
 	"sync"
 )
 
-type SloggerSettings struct {
-	LogLevel     LogLevel
-	LogName      string
-	LogDirectory string
-	LogExtension string
-}
-
 type Slogger struct {
 	mutex     sync.Mutex
 	settings  SloggerSettings
@@ -39,6 +32,8 @@ func (self *Slogger) Initialize(settings SloggerSettings, processor *SloggerProc
 	if nil == processor {
 		return errors.New("Initialize failed. beacuse processor is nil.")
 	}
+
+	settings.Trim()
 
 	self.Close()
 

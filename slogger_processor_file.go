@@ -50,7 +50,7 @@ func (self *SloggerProcessorFile) _UpdateSink(setting *SloggerSettings, currentT
 		self.logFp.Close()
 	}
 
-	self.logPath = _CreateLogFileName(setting.LogName, setting.LogExtension)
+	self.logPath = _CreateLogFileName(setting.LogDirectory+"/"+setting.LogName, setting.LogExtension)
 	if fp, err := os.OpenFile(self.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); nil == err {
 		self.logFp = fp
 		return nil
