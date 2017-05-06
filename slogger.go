@@ -142,7 +142,7 @@ func (self *Slogger) record(logLevel LogLevel, format string, v ...interface{}) 
 					&SloggerData{
 						logLevel:          logLevel,
 						currentTimeMillis: GetCurrentTimeMillis(),
-						logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...) + "\n",
+						logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...),
 					},
 				)
 				return nil

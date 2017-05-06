@@ -23,7 +23,7 @@ func (self *SloggerProcessorFile) Record(setting SloggerSettings, data *SloggerD
 	}
 
 	//Log write.
-	if _, err := self.logFp.WriteString(data.ToLogMessage()); nil != err {
+	if _, err := self.logFp.WriteString(data.ToLogMessage() + "\n"); nil != err {
 		return err
 	}
 
