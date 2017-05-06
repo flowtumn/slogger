@@ -43,7 +43,7 @@ func Test_SLogger_Base(t *testing.T) {
 		t.Errorf("It is equal to DATA. This is incorrect")
 	}
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorFile())
 
 	if !reflect.DeepEqual(*r.Settings(), DATA) {
 		t.Errorf("Settings must be DATA.")
@@ -60,7 +60,7 @@ func Test_SLogger_Close(t *testing.T) {
 	}
 	r := Slogger{}
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorFile())
 	r.Close()
 
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
@@ -68,7 +68,7 @@ func Test_SLogger_Close(t *testing.T) {
 	//Close後に記録されてはいけない
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 0,
 			Error:    0,
 			Warn:     0,
@@ -95,13 +95,13 @@ func Test_SLogger_Debug(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorFile())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	//Debugなら、全て記録される。
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
 			Warn:     1,
@@ -109,7 +109,7 @@ func Test_SLogger_Debug(t *testing.T) {
 			Debug:    1,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 }
 
@@ -128,12 +128,12 @@ func Test_SLogger_Info(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorFile())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
 			Warn:     1,
@@ -141,7 +141,7 @@ func Test_SLogger_Info(t *testing.T) {
 			Debug:    0,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 }
 
@@ -160,12 +160,12 @@ func Test_SLogger_WARN(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorFile())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
 			Warn:     1,
@@ -173,7 +173,7 @@ func Test_SLogger_WARN(t *testing.T) {
 			Debug:    0,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 }
 
@@ -192,12 +192,12 @@ func Test_SLogger_Error(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorFile())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
 			Warn:     0,
@@ -205,7 +205,7 @@ func Test_SLogger_Error(t *testing.T) {
 			Debug:    0,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 }
 
@@ -224,12 +224,12 @@ func Test_SLogger_Critical(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorFile())
 	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
 		*r.Counters(),
-		SloggerOutputCount{
+		SloggerRecordCount{
 			Critical: 1,
 			Error:    0,
 			Warn:     0,
@@ -237,7 +237,7 @@ func Test_SLogger_Critical(t *testing.T) {
 			Debug:    0,
 		},
 	) {
-		t.Errorf("Output count does not match.")
+		t.Errorf("Record count does not match.")
 	}
 
 }
@@ -251,7 +251,7 @@ func Test_SLogger_MT(t *testing.T) {
 	}
 	WORKER_COUNT := (int64)(8)
 	genRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	var TEST_CHECK = SloggerOutputCount{}
+	var TEST_CHECK = SloggerRecordCount{}
 
 	r := Slogger{}
 
@@ -260,7 +260,7 @@ func Test_SLogger_MT(t *testing.T) {
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA)
+	r.Initialize(DATA, CreateSloggerProcessorFile())
 
 	var waiter sync.WaitGroup
 	for i := 0; i < (int)(WORKER_COUNT); i++ {
@@ -292,6 +292,6 @@ func Test_SLogger_MT(t *testing.T) {
 		*r.Counters(),
 		TEST_CHECK,
 	) {
-		t.Errorf("Output count does not match. Actual: %+v,  Expected: %+v", *r.Counters(), TEST_CHECK)
+		t.Errorf("Record count does not match. Actual: %+v,  Expected: %+v", *r.Counters(), TEST_CHECK)
 	}
 }

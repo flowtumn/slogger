@@ -5,7 +5,7 @@ import "time"
 type LogLayout int
 
 const (
-	Normal = iota
+	Normal = iota + 1
 	Full
 )
 

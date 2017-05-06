@@ -6,16 +6,16 @@ import (
 )
 
 func Test_SLogger_Worker_Base(t *testing.T) {
-	DATA := _SloggerData{
-		logLevel:          CRITICAL,
-		currentTimeMillis: 12345,
-		logMessage:        "TEST",
+	DATA := SloggerData{
+		CurrentTimeMillis: 12345,
+		LogLevel:          CRITICAL,
+		LogMessage:        "TEST",
 	}
 	REPEAT := 10
 	var called = 0
 
 	worker := _CreateSloggerWorker(
-		func(v *_SloggerData) {
+		func(v *SloggerData) {
 			called = called + 1
 			if nil != v && reflect.DeepEqual(*v, DATA) {
 				return

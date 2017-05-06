@@ -1,11 +1,22 @@
 package slogger
 
-type _SloggerData struct {
-	logLevel          LogLevel
-	currentTimeMillis int64
-	logMessage        string
+import "fmt"
+
+type SloggerData struct {
+	CurrentTimeMillis int64
+	LogLevel          LogLevel
+	LogMessage        string
+	SourceName        string
+	SourceLine        int
 }
 
-func (p *_SloggerData) _toLogMessage() string {
-	return ConvertTimeStamp(p.currentTimeMillis, Full) + " " + p.logLevel.toStr() + " " + p.logMessage
+func (self *SloggerData) ToLogMessage() string {
+	return fmt.Sprintf(
+		"%s %s %s(%d): %s",
+		ConvertTimeStamp(self.CurrentTimeMillis, Full),
+		self.LogLevel.ToString(),
+		self.SourceName,
+		self.SourceLine,
+		self.LogMessage,
+	)
 }

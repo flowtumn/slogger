@@ -9,89 +9,86 @@ import (
 	"sync"
 )
 
-type SloggerSettings struct {
-	LogLevel     LogLevel
-	LogName      string
-	LogDirectory string
-	LogExtension string
-}
-
-type SloggerOutputCount struct {
-	Debug    int64
-	Info     int64
-	Warn     int64
-	Error    int64
-	Critical int64
-}
-
 type Slogger struct {
-	mutex               sync.Mutex
-	settings            SloggerSettings
-	count               SloggerOutputCount
-	task                *_SloggerWorker
-	isRuning            bool
-	currentTimeStamp    string
-	lastRecordTimeNanos int64
-	logPath             string
-	logFp               *os.File
+	mutex     sync.Mutex
+	settings  SloggerSettings
+	count     SloggerRecordCount
+	task      *_SloggerWorker
+	processor *SloggerProcessor
+	logPath   string
+	logFp     *os.File
 }
 
-func _CreateLogFileName(prefix string, suffix string) string {
-	return prefix + "-" + GetTimeStamp(Normal) + "." + suffix
-}
-
-func (p *Slogger) _SafeDo(f func() interface{}) interface{} {
-	p.mutex.Lock()
+func (self *Slogger) _SafeDo(f func() interface{}) interface{} {
+	self.mutex.Lock()
 	defer func() {
-		p.mutex.Unlock()
+		self.mutex.Unlock()
 	}()
 
 	return f()
 }
 
-func (p *Slogger) Initialize(settings SloggerSettings) {
-	p.Close()
+func (self *Slogger) Initialize(settings SloggerSettings, processor *SloggerProcessor) error {
+	if nil == processor {
+		return errors.New("Initialize failed. beacuse processor is nil.")
+	}
 
-	p._SafeDo(
+	settings.Trim()
+
+	self.Close()
+
+	if r, ok := self._SafeDo(
 		func() interface{} {
-			p.settings = settings
-			p.count = SloggerOutputCount{}
-			p.isRuning = false
-			p.logFp = nil
+			self.settings = settings
+			self.count = SloggerRecordCount{}
+			self.processor = processor
 
 			//Create Worker.
-			p.task = _CreateSloggerWorker(
-				func(buf *_SloggerData) {
-					p._RecordProcess(buf)
+			self.task = _CreateSloggerWorker(
+				func(buf *SloggerData) {
+					if nil == (*self.processor).Record(self.settings, buf) {
+						//Record success.
+						self.count._CountUpOnLogLevel(buf.LogLevel)
+
+						//Update logpath.
+						if v := (*self.processor).GetLogPath(); nil != v {
+							self.logPath = *v
+						}
+					}
 				},
 			)
 
 			return nil
 		},
-	)
+	).(error); ok {
+		return r
+	}
+
+	return nil
 }
 
-func (p *Slogger) Close() {
-	p._SafeDo(
+func (self *Slogger) Close() {
+	self._SafeDo(
 		func() interface{} {
-			if nil != p.task {
-				p.task._Shutdown()
-				p.task = nil
+			if nil != self.task {
+				self.task._Shutdown()
+				self.task = nil
 			}
 
-			if nil != p.logFp {
-				p.logFp.Close()
-				p.logFp = nil
+			if nil != self.processor {
+				(*self.processor).Shutdown()
+				self.processor = nil
 			}
+
 			return nil
 		},
 	)
 }
 
-func (p *Slogger) Settings() *SloggerSettings {
-	if v, ok := p._SafeDo(
+func (self *Slogger) Settings() *SloggerSettings {
+	if v, ok := self._SafeDo(
 		func() interface{} {
-			return p.settings
+			return self.settings
 		},
 	).(SloggerSettings); ok {
 		return &v
@@ -100,48 +97,51 @@ func (p *Slogger) Settings() *SloggerSettings {
 	return nil
 }
 
-func (p *Slogger) Counters() *SloggerOutputCount {
-	if v, ok := p._SafeDo(
+func (self *Slogger) Counters() *SloggerRecordCount {
+	if v, ok := self._SafeDo(
 		func() interface{} {
-			return p.count
+			return self.count
 		},
-	).(SloggerOutputCount); ok {
+	).(SloggerRecordCount); ok {
 		return &v
 	}
 
 	return nil
 }
 
-func (p *Slogger) GetLogPath() *string {
-	if v, ok := p._SafeDo(
+func (self *Slogger) GetLogPath() *string {
+	if v, ok := self._SafeDo(
 		func() interface{} {
-			return p.logPath
+			return self.logPath
 		},
 	).(string); ok {
 		return &v
 	}
-
 	return nil
 }
 
 //output log.
-func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
-	//filter to loglevel.
-	if logLevel < p.settings.LogLevel {
-		return
-	}
-
+func (self *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 	fileName, fileLine := _GetFileInfoFromStack(3)
 
-	p._SafeDo(
+	self._SafeDo(
 		func() interface{} {
+			//filter to loglevel.
+			if logLevel < self.settings.LogLevel {
+				return nil
+			}
+
 			//Enqueue.
-			if nil != p.task {
-				p.task._Offer(&_SloggerData{
-					logLevel:          logLevel,
-					currentTimeMillis: GetCurrentTimeMillis(),
-					logMessage:        fmt.Sprintf("%s(%d): ", fileName, fileLine) + fmt.Sprintf(format, v...) + "\n",
-				})
+			if nil != self.task {
+				self.task._Offer(
+					&SloggerData{
+						CurrentTimeMillis: GetCurrentTimeMillis(),
+						LogLevel:          logLevel,
+						LogMessage:        fmt.Sprintf(format, v...),
+						SourceName:        fileName,
+						SourceLine:        fileLine,
+					},
+				)
 				return nil
 			} else {
 				return errors.New("task is nil.")
@@ -150,80 +150,24 @@ func (p *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
 	)
 }
 
-func (p *Slogger) _RecordProcess(v *_SloggerData) interface{} {
-	if nil == v {
-		return errors.New("SloggerBuffer is nil.")
-	}
-
-	if err := p._UpdateSink(v.currentTimeMillis); nil != err {
-		return err
-	}
-
-	//Log write.
-	if _, err := p.logFp.WriteString(v._toLogMessage()); nil != err {
-		return err
-	}
-
-	p._CountUpOnLogLevel(v.logLevel)
-
-	return nil
+func (self *Slogger) Critical(format string, v ...interface{}) {
+	self.record(CRITICAL, format, v...)
 }
 
-func (p *Slogger) _CountUpOnLogLevel(logLevel LogLevel) {
-	switch logLevel {
-	default:
-	case DEBUG:
-		p.count.Debug = p.count.Debug + 1
-	case INFO:
-		p.count.Info = p.count.Info + 1
-	case WARN:
-		p.count.Warn = p.count.Warn + 1
-	case ERROR:
-		p.count.Error = p.count.Error + 1
-	case CRITICAL:
-		p.count.Critical = p.count.Critical + 1
-	}
+func (self *Slogger) Error(format string, v ...interface{}) {
+	self.record(ERROR, format, v...)
 }
 
-func (p *Slogger) _UpdateSink(currentTimeMillis int64) interface{} {
-	tm := ConvertTimeStamp(currentTimeMillis, Normal)
-	if p.currentTimeStamp == tm {
-		return nil
-	}
-
-	//Update a currentTimeStamp.
-	p.currentTimeStamp = tm
-	if nil != p.logFp {
-		p.logFp.Close()
-	}
-
-	p.logPath = _CreateLogFileName(p.settings.LogName, p.settings.LogExtension)
-	if fp, err := os.OpenFile(p.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); nil == err {
-		p.logFp = fp
-		return nil
-	} else {
-		return err
-	}
+func (self *Slogger) Warn(format string, v ...interface{}) {
+	self.record(WARN, format, v...)
 }
 
-func (p *Slogger) Critical(format string, v ...interface{}) {
-	p.record(CRITICAL, format, v...)
+func (self *Slogger) Info(format string, v ...interface{}) {
+	self.record(INFO, format, v...)
 }
 
-func (p *Slogger) Error(format string, v ...interface{}) {
-	p.record(ERROR, format, v...)
-}
-
-func (p *Slogger) Warn(format string, v ...interface{}) {
-	p.record(WARN, format, v...)
-}
-
-func (p *Slogger) Info(format string, v ...interface{}) {
-	p.record(INFO, format, v...)
-}
-
-func (p *Slogger) Debug(format string, v ...interface{}) {
-	p.record(DEBUG, format, v...)
+func (self *Slogger) Debug(format string, v ...interface{}) {
+	self.record(DEBUG, format, v...)
 }
 
 func _GetFileInfoFromStack(depth int) (string, int) {
