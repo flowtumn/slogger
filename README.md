@@ -20,7 +20,7 @@ go get github.com/flowtumn/slogger
 slogger.SloggerSettings{
     LogLevel:          slogger.DEBUG,       // LogLevel。指定レベルより以上のログが記録されます。
     LogName:           "EXAMPLE-SLOGGER",   // Loggerの名前。
-    LogDirectory:      "/tmp/",             // Log出力先。
+    LogDirectory:      "/tmp",              // Log出力先。
     LogExtension:      "log",               // Logの拡張子。
 }
 ```
@@ -42,11 +42,12 @@ func main() {
     r := slogger.Slogger{}
     r.Initialize(
         slogger.SloggerSettings{
-            LogLevel:          slogger.DEBUG,
-            LogName:           "EXAMPLE-SLOGGER",
-            LogDirectory:      "/tmp/",
-            LogExtension:      "log",
+            LogLevel:     slogger.DEBUG,
+            LogName:      "EXAMPLE-SLOGGER",
+            LogDirectory: "/tmp",
+            LogExtension: "log",
         },
+        slogger.CreateSloggerProcessorFile(), //Logを処理するProcessor。Fileに記録する。
     )
 
     defer func() {
@@ -65,10 +66,10 @@ func main() {
 ## Log file.
 
 ```
-$ cat /tmp/EXAMPLE-SLOGGER-2017-05-03.log
-2017-05-03 00:29:25 [DEBUG] main.go(24): Debug Message. map[100:200 300:400 500:600]
-2017-05-03 00:29:25 [INFO] main.go(25): Info Message.
-2017-05-03 00:29:25 [WARN] main.go(26): Warn Message.
-2017-05-03 00:29:25 [ERROR] main.go(27): Error Message.
-2017-05-03 00:29:25 [CRITICAL] main.go(28): Critical Message.
+$ cat /tmp/EXAMPLE-SLOGGER-2017-05-06.log
+2017-05-06 23:41:46 [DEBUG] main.go(22): Debug Message. map[100:200 300:400 500:600]
+2017-05-06 23:41:46 [INFO] main.go(23): Info Message.
+2017-05-06 23:41:46 [WARN] main.go(24): Warn Message.
+2017-05-06 23:41:46 [ERROR] main.go(25): Error Message.
+2017-05-06 23:41:46 [CRITICAL] main.go(26): Critical Message.
 ```
