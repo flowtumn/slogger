@@ -8,6 +8,10 @@ type SloggerProcessorFile struct {
 	logFp            *os.File
 }
 
+func _CreateLogFileName(prefix string, suffix string) string {
+	return prefix + "-" + GetTimeStamp(Normal) + "." + suffix
+}
+
 func (self *SloggerProcessorFile) GetLogPath() *string {
 	r := self.logPath
 	return &r

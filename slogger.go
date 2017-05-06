@@ -26,10 +26,6 @@ type Slogger struct {
 	logFp     *os.File
 }
 
-func _CreateLogFileName(prefix string, suffix string) string {
-	return prefix + "-" + GetTimeStamp(Normal) + "." + suffix
-}
-
 func (self *Slogger) _SafeDo(f func() interface{}) interface{} {
 	self.mutex.Lock()
 	defer func() {
