@@ -1,7 +1,10 @@
 package slogger
 
-import "testing"
-import "time"
+import (
+	"reflect"
+	"testing"
+	"time"
+)
 
 const (
 	_TEST_LOG_PATH = "\\1?test//?aa"
@@ -11,6 +14,7 @@ type _TestProcessor struct {
 	callLogPath  int
 	callRecord   int
 	callShutdown int
+	argsSetting  SloggerSettings
 }
 
 func (self *_TestProcessor) GetLogPath() *string {
@@ -19,8 +23,9 @@ func (self *_TestProcessor) GetLogPath() *string {
 	return &r
 }
 
-func (self *_TestProcessor) Record(*SloggerData) error {
+func (self *_TestProcessor) Record(settings SloggerSettings, _ *SloggerData) error {
 	self.callRecord = self.callRecord + 1
+	self.argsSetting = settings
 	return nil
 }
 
@@ -70,14 +75,22 @@ func Test_SLogger_Empty_Processor(t *testing.T) {
 	//少し待機
 	time.Sleep(100 * time.Millisecond)
 
-	if !(1 == testProcessor.callLogPath && 3 == testProcessor.callRecord && 0 == testProcessor.callShutdown) {
+	if !(3 == testProcessor.callRecord && 0 == testProcessor.callShutdown) {
 		t.Errorf("Record counter does not match")
 	}
 
 	//Shutdownを発火
 	r.Close()
-	if !(1 == testProcessor.callLogPath && 3 == testProcessor.callRecord && 1 == testProcessor.callShutdown) {
+	if !(3 == testProcessor.callRecord && 1 == testProcessor.callShutdown) {
 		t.Errorf("Shutdown counter does not match")
+	}
+
+	//Setting確認
+	if !reflect.DeepEqual(
+		testProcessor.argsSetting,
+		DATA,
+	) {
+		t.Errorf("Settings must be DATA.")
 	}
 
 	//以降Record/Shutdownは呼ばれない
@@ -89,7 +102,7 @@ func Test_SLogger_Empty_Processor(t *testing.T) {
 	r.Critical("TEST")
 	r.Close()
 
-	if !(1 == testProcessor.callLogPath && 3 == testProcessor.callRecord && 1 == testProcessor.callShutdown) {
+	if !(3 == testProcessor.callRecord && 1 == testProcessor.callShutdown) {
 		t.Errorf("Shutdown and Record counter does not match")
 	}
 

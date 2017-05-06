@@ -9,12 +9,12 @@ type SloggerProcessorNormal struct {
 }
 
 func (self *SloggerProcessorNormal) GetLogPath() *string {
-	r := "qwer.txt"
+	r := self.logPath
 	return &r
 }
 
-func (self *SloggerProcessorNormal) Record(data *SloggerData) error {
-	if err := self._UpdateSink(data.currentTimeMillis); nil != err {
+func (self *SloggerProcessorNormal) Record(setting SloggerSettings, data *SloggerData) error {
+	if err := self._UpdateSink(&setting, data.currentTimeMillis); nil != err {
 		return err
 	}
 
@@ -33,7 +33,7 @@ func (self *SloggerProcessorNormal) Shutdown() {
 	}
 }
 
-func (self *SloggerProcessorNormal) _UpdateSink(currentTimeMillis int64) error {
+func (self *SloggerProcessorNormal) _UpdateSink(setting *SloggerSettings, currentTimeMillis int64) error {
 	tm := ConvertTimeStamp(currentTimeMillis, Normal)
 
 	if self.currentTimeStamp == tm {
@@ -46,8 +46,7 @@ func (self *SloggerProcessorNormal) _UpdateSink(currentTimeMillis int64) error {
 		self.logFp.Close()
 	}
 
-	// self.logPath = _CreateLogFileName(p.settings.LogName, p.settings.LogExtension)
-	self.logPath = _CreateLogFileName("TEST", "log")
+	self.logPath = _CreateLogFileName(setting.LogName, setting.LogExtension)
 	if fp, err := os.OpenFile(self.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); nil == err {
 		self.logFp = fp
 		return nil

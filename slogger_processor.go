@@ -2,6 +2,6 @@ package slogger
 
 type SloggerProcessor interface {
 	GetLogPath() *string
-	Record(*SloggerData) error
+	Record(SloggerSettings, *SloggerData) error
 	Shutdown()
 }
