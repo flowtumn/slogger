@@ -2,18 +2,18 @@ package slogger
 
 import "os"
 
-type SloggerProcessorNormal struct {
+type SloggerProcessorFile struct {
 	currentTimeStamp string
 	logPath          string
 	logFp            *os.File
 }
 
-func (self *SloggerProcessorNormal) GetLogPath() *string {
+func (self *SloggerProcessorFile) GetLogPath() *string {
 	r := self.logPath
 	return &r
 }
 
-func (self *SloggerProcessorNormal) Record(setting SloggerSettings, data *SloggerData) error {
+func (self *SloggerProcessorFile) Record(setting SloggerSettings, data *SloggerData) error {
 	if err := self._UpdateSink(&setting, data.currentTimeMillis); nil != err {
 		return err
 	}
@@ -26,14 +26,14 @@ func (self *SloggerProcessorNormal) Record(setting SloggerSettings, data *Slogge
 	return nil
 }
 
-func (self *SloggerProcessorNormal) Shutdown() {
+func (self *SloggerProcessorFile) Shutdown() {
 	if nil != self.logFp {
 		self.logFp.Close()
 		self.logFp = nil
 	}
 }
 
-func (self *SloggerProcessorNormal) _UpdateSink(setting *SloggerSettings, currentTimeMillis int64) error {
+func (self *SloggerProcessorFile) _UpdateSink(setting *SloggerSettings, currentTimeMillis int64) error {
 	tm := ConvertTimeStamp(currentTimeMillis, Normal)
 
 	if self.currentTimeStamp == tm {
@@ -57,8 +57,8 @@ func (self *SloggerProcessorNormal) _UpdateSink(setting *SloggerSettings, curren
 	return nil
 }
 
-func CreateSloggerProcessorNormal() *SloggerProcessor {
+func CreateSloggerProcessorFile() *SloggerProcessor {
 	var r SloggerProcessor
-	r = &SloggerProcessorNormal{}
+	r = &SloggerProcessorFile{}
 	return &r
 }
