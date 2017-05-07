@@ -31,43 +31,60 @@ func _writeLog(p *Slogger, waitTimes time.Duration) {
 }
 
 func Test_SLogger_Base(t *testing.T) {
-	DATA := SloggerSettings{
+	SETTINGS := SloggerSettings{
 		LogLevel:     WARN,
 		LogName:      "dummy1",
 		LogDirectory: "dumym2",
 		LogExtension: "log",
 	}
-	r := Slogger{}
 
-	if reflect.DeepEqual(*r.Settings(), DATA) {
-		t.Errorf("It is equal to DATA. This is incorrect")
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
 	}
 
-	r.Initialize(DATA, CreateSloggerProcessorFile())
-
-	if !reflect.DeepEqual(*r.Settings(), DATA) {
-		t.Errorf("Settings must be DATA.")
+	if true != r.IsRunning() {
+		t.Fatalf("Slogger not running..")
 	}
 
+	if !reflect.DeepEqual(r.Settings(), SETTINGS) {
+		t.Errorf("Settings must be SETTINGS.")
+	}
+
+	r.Close()
+	if false != r.IsRunning() {
+		t.Fatalf("Slogger Worker not stopped.")
+	}
 }
 
 func Test_SLogger_Close(t *testing.T) {
-	DATA := SloggerSettings{
+	SETTINGS := SloggerSettings{
 		LogLevel:     WARN,
 		LogName:      "dummy1",
 		LogDirectory: "dumym2",
 		LogExtension: "log",
 	}
-	r := Slogger{}
 
-	r.Initialize(DATA, CreateSloggerProcessorFile())
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
+
 	r.Close()
 
-	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
 
 	//Close後に記録されてはいけない
 	if !reflect.DeepEqual(
-		*r.Counters(),
+		*r.RecordCounter(),
 		SloggerRecordCount{
 			Critical: 0,
 			Error:    0,
@@ -81,26 +98,32 @@ func Test_SLogger_Close(t *testing.T) {
 }
 
 func Test_SLogger_Debug(t *testing.T) {
-	DATA := SloggerSettings{
+	SETTINGS := SloggerSettings{
 		LogLevel:     DEBUG,
 		LogName:      "TEST",
 		LogDirectory: "./",
 		LogExtension: "log",
 	}
 
-	r := Slogger{}
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
 
 	defer func() {
 		r.Close()
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA, CreateSloggerProcessorFile())
-	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
 
 	//Debugなら、全て記録される。
 	if !reflect.DeepEqual(
-		*r.Counters(),
+		*r.RecordCounter(),
 		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
@@ -114,25 +137,31 @@ func Test_SLogger_Debug(t *testing.T) {
 }
 
 func Test_SLogger_Info(t *testing.T) {
-	DATA := SloggerSettings{
+	SETTINGS := SloggerSettings{
 		LogLevel:     INFO,
 		LogName:      "TEST",
 		LogDirectory: "./",
 		LogExtension: "log",
 	}
 
-	r := Slogger{}
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
 
 	defer func() {
 		r.Close()
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA, CreateSloggerProcessorFile())
-	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
-		*r.Counters(),
+		*r.RecordCounter(),
 		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
@@ -146,25 +175,31 @@ func Test_SLogger_Info(t *testing.T) {
 }
 
 func Test_SLogger_WARN(t *testing.T) {
-	DATA := SloggerSettings{
+	SETTINGS := SloggerSettings{
 		LogLevel:     WARN,
 		LogName:      "TEST",
 		LogDirectory: "./",
 		LogExtension: "log",
 	}
 
-	r := Slogger{}
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
 
 	defer func() {
 		r.Close()
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA, CreateSloggerProcessorFile())
-	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
-		*r.Counters(),
+		*r.RecordCounter(),
 		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
@@ -178,25 +213,31 @@ func Test_SLogger_WARN(t *testing.T) {
 }
 
 func Test_SLogger_Error(t *testing.T) {
-	DATA := SloggerSettings{
+	SETTINGS := SloggerSettings{
 		LogLevel:     ERROR,
 		LogName:      "TEST",
 		LogDirectory: "./",
 		LogExtension: "log",
 	}
 
-	r := Slogger{}
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
 
 	defer func() {
 		r.Close()
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA, CreateSloggerProcessorFile())
-	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
-		*r.Counters(),
+		*r.RecordCounter(),
 		SloggerRecordCount{
 			Critical: 1,
 			Error:    1,
@@ -210,25 +251,31 @@ func Test_SLogger_Error(t *testing.T) {
 }
 
 func Test_SLogger_Critical(t *testing.T) {
-	DATA := SloggerSettings{
+	SETTINGS := SloggerSettings{
 		LogLevel:     CRITICAL,
 		LogName:      "TEST",
 		LogDirectory: "./",
 		LogExtension: "log",
 	}
 
-	r := Slogger{}
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
 
 	defer func() {
 		r.Close()
 		os.Remove(*r.GetLogPath())
 	}()
 
-	r.Initialize(DATA, CreateSloggerProcessorFile())
-	_writeLog(&r, DEFAULT_TEST_WAIT_TIMES)
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
 
 	if !reflect.DeepEqual(
-		*r.Counters(),
+		*r.RecordCounter(),
 		SloggerRecordCount{
 			Critical: 1,
 			Error:    0,
@@ -243,7 +290,7 @@ func Test_SLogger_Critical(t *testing.T) {
 }
 
 func Test_SLogger_MT(t *testing.T) {
-	DATA := SloggerSettings{
+	SETTINGS := SloggerSettings{
 		LogLevel:     DEBUG,
 		LogName:      "TEST",
 		LogDirectory: "./",
@@ -253,14 +300,19 @@ func Test_SLogger_MT(t *testing.T) {
 	genRand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var TEST_CHECK = SloggerRecordCount{}
 
-	r := Slogger{}
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
 
 	defer func() {
 		r.Close()
 		os.Remove(*r.GetLogPath())
 	}()
-
-	r.Initialize(DATA, CreateSloggerProcessorFile())
 
 	var waiter sync.WaitGroup
 	for i := 0; i < (int)(WORKER_COUNT); i++ {
@@ -277,7 +329,7 @@ func Test_SLogger_MT(t *testing.T) {
 		go func(writeCount int) {
 			for ii := 0; ii < writeCount; ii++ {
 				//Wait無しで書き込み続ける
-				_writeLog(&r, 0)
+				_writeLog(r, 0)
 			}
 			waiter.Done()
 		}((int)(count))
@@ -289,9 +341,9 @@ func Test_SLogger_MT(t *testing.T) {
 	r.Close()
 
 	if !reflect.DeepEqual(
-		*r.Counters(),
+		*r.RecordCounter(),
 		TEST_CHECK,
 	) {
-		t.Errorf("Record count does not match. Actual: %+v,  Expected: %+v", *r.Counters(), TEST_CHECK)
+		t.Errorf("Record count does not match. Actual: %+v,  Expected: %+v", *r.RecordCounter(), TEST_CHECK)
 	}
 }

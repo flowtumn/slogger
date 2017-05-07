@@ -18,7 +18,7 @@ func (self *SloggerProcessorStdout) Shutdown() {
 
 }
 
-func CreateSloggerProcessorOutput() *SloggerProcessor {
+func CreateSloggerProcessorStdout() *SloggerProcessor {
 	var r SloggerProcessor
 	r = &SloggerProcessorStdout{}
 	return &r

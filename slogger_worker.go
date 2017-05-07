@@ -18,45 +18,45 @@ func _CreateSloggerWorker(handler func(*SloggerData)) *_SloggerWorker {
 	return p
 }
 
-func (p *_SloggerWorker) _DoWork() {
-	go p._Process()
-	p.wg.Add(1)
-	p.running.Set(true)
+func (self *_SloggerWorker) _DoWork() {
+	go self._Process()
+	self.wg.Add(1)
+	self.running.Set(true)
 }
 
-func (p *_SloggerWorker) _Offer(v *SloggerData) bool {
-	if !p.running.Get() {
+func (self *_SloggerWorker) _Offer(v *SloggerData) bool {
+	if !self.running.Get() {
 		return false
 	}
 
-	p.queue <- v
+	self.queue <- v
 	return true
 }
 
-func (p *_SloggerWorker) IsRunning() bool {
-	return p.running.Get()
+func (self *_SloggerWorker) IsRunning() bool {
+	return self.running.Get()
 }
 
-func (p *_SloggerWorker) _Process() {
+func (self *_SloggerWorker) _Process() {
 	defer func() {
-		p.wg.Done()
+		self.wg.Done()
 	}()
 
 	for {
 		select {
-		case v := <-p.queue:
+		case v := <-self.queue:
 			if nil == v {
 				//Exit.
 				return
 			}
-			p.handler(v)
+			self.handler(v)
 		}
 	}
 }
 
-func (p *_SloggerWorker) _Shutdown() {
+func (self *_SloggerWorker) _Shutdown() {
 	//End mark.
-	p.queue <- nil
-	p.wg.Wait()
-	p.running.Set(false)
+	self.queue <- nil
+	self.wg.Wait()
+	self.running.Set(false)
 }
