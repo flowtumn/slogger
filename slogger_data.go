@@ -1,6 +1,6 @@
 package slogger
 
-import "fmt"
+import "strconv"
 
 type SloggerData struct {
 	CurrentTimeMillis int64
@@ -11,12 +11,8 @@ type SloggerData struct {
 }
 
 func (self *SloggerData) ToLogMessage() string {
-	return fmt.Sprintf(
-		"%s %s %s(%d): %s",
-		ConvertTimeStamp(self.CurrentTimeMillis, Full),
-		self.LogLevel.ToString(),
-		self.SourceName,
-		self.SourceLine,
-		self.LogMessage,
-	)
+	return ConvertTimeStamp(self.CurrentTimeMillis, Full) + " " +
+		self.LogLevel.ToString() + " " +
+		self.SourceName + "(" + strconv.Itoa(self.SourceLine) + "): " +
+		self.LogMessage
 }
