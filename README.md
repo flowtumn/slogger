@@ -4,6 +4,8 @@
 
 LogLevelでのフィルターと、日付毎に出力先を変えてログを記録する機能を有しています。
 
+記録するファイル名のフォーマットは ```{LogName}-yyyy-MM-dd.{LogExtension} ``` となります。
+
 * * *
 
 ## Install
@@ -18,7 +20,7 @@ go get github.com/flowtumn/slogger
 
 ```Settings
 slogger.SloggerSettings{
-    LogLevel:          slogger.DEBUG,       // LogLevel。指定レベルより以上のログが記録されます。
+    LogLevel:          slogger.DEBUG,       // LogLevel。指定レベル以上のログが記録されます。
     LogName:           "EXAMPLE-SLOGGER",   // Loggerの名前。
     LogDirectory:      "/tmp",              // Log出力先。
     LogExtension:      "log",               // Logの拡張子。
@@ -29,7 +31,7 @@ slogger.SloggerSettings{
 
 　使い方のサンプル。
 
-Loggerには EXAMPLE-SLOGGER という名称を設定し、/tmp/をlogDirectoryとしています。
+Loggerには EXAMPLE-SLOGGER という名称を設定し、/tmpをlogDirectoryとしています。
 
 ```
 package main
@@ -39,8 +41,7 @@ import (
 )
 
 func main() {
-    r := slogger.Slogger{}
-    r.Initialize(
+    logger, err := slogger.CreateSlogger(
         slogger.SloggerSettings{
             LogLevel:     slogger.DEBUG,
             LogName:      "EXAMPLE-SLOGGER",
@@ -50,16 +51,20 @@ func main() {
         slogger.CreateSloggerProcessorFile(), //Logを処理するProcessor。Fileに記録する。
     )
 
+    if nil != err {
+        panic(err)
+    }
+
     defer func() {
         //Closeを呼びlogをflush
-        r.Close()
+        logger.Close()
     }()
 
-    r.Debug("Debug Message. %+v", map[int]int{100: 200, 300: 400, 500: 600});
-    r.Info("Info Message.");
-    r.Warn("Warn Message.");
-    r.Error("Error Message.");
-    r.Critical("Critical Message.");
+    logger.Debug("Debug Message. %+v", map[int]int{100: 200, 300: 400, 500: 600})
+    logger.Info("Info Message.")
+    logger.Warn("Warn Message.")
+    logger.Error("Error Message.")
+    logger.Critical("Critical Message.")
 }
 ```
 
