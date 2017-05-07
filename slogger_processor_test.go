@@ -42,16 +42,22 @@ func _CreateSloggerProcessorTest() (*SloggerProcessor, *_TestProcessor) {
 }
 
 func Test_SLogger_Empty_Processor(t *testing.T) {
-	DATA := SloggerSettings{
+	SETTINGS := SloggerSettings{
 		LogLevel:     WARN,
 		LogName:      "dummy1",
 		LogDirectory: "dumym2",
 		LogExtension: "log",
 	}
-	r := Slogger{}
 	processor, testProcessor := _CreateSloggerProcessorTest()
 
-	r.Initialize(DATA, processor)
+	r, err := CreateSlogger(
+		SETTINGS,
+		processor,
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
 
 	if v := (*processor).GetLogPath(); nil != v {
 		if _TEST_LOG_PATH != *v {
@@ -88,7 +94,7 @@ func Test_SLogger_Empty_Processor(t *testing.T) {
 	//Setting確認
 	if !reflect.DeepEqual(
 		testProcessor.argsSetting,
-		DATA,
+		SETTINGS,
 	) {
 		t.Errorf("Settings must be DATA.")
 	}

@@ -19,6 +19,39 @@ type Slogger struct {
 	logFp     *os.File
 }
 
+func CreateSlogger(settings SloggerSettings, processor *SloggerProcessor) (*Slogger, error) {
+	if nil == processor {
+		return nil, errors.New("Initialize failed. beacuse processor is nil.")
+	}
+
+	settings.Trim()
+	p := &Slogger{
+		settings:  settings,
+		processor: processor,
+	}
+
+	//Create Worker.
+	p.task = _CreateSloggerWorker(
+		func(data *SloggerData) {
+			if nil == (*p.processor).Record(p.settings, data) {
+				//Record success.
+				p.count._CountUpOnLogLevel(data.LogLevel)
+
+				//Update logpath.
+				if v := (*p.processor).GetLogPath(); nil != v {
+					p.logPath = *v
+				}
+			}
+		},
+	)
+
+	if nil == p.task {
+		return nil, errors.New("Internal Error. Failed to create worker.")
+	}
+
+	return p, nil
+}
+
 func (self *Slogger) _SafeDo(f func() interface{}) interface{} {
 	self.mutex.Lock()
 	defer func() {
@@ -28,76 +61,27 @@ func (self *Slogger) _SafeDo(f func() interface{}) interface{} {
 	return f()
 }
 
-func (self *Slogger) Initialize(settings SloggerSettings, processor *SloggerProcessor) error {
-	if nil == processor {
-		return errors.New("Initialize failed. beacuse processor is nil.")
-	}
-
-	settings.Trim()
-
-	self.Close()
-
-	if r, ok := self._SafeDo(
-		func() interface{} {
-			self.settings = settings
-			self.count = SloggerRecordCount{}
-			self.processor = processor
-
-			//Create Worker.
-			self.task = _CreateSloggerWorker(
-				func(buf *SloggerData) {
-					if nil == (*self.processor).Record(self.settings, buf) {
-						//Record success.
-						self.count._CountUpOnLogLevel(buf.LogLevel)
-
-						//Update logpath.
-						if v := (*self.processor).GetLogPath(); nil != v {
-							self.logPath = *v
-						}
-					}
-				},
-			)
-
-			return nil
-		},
-	).(error); ok {
-		return r
-	}
-
-	return nil
+func (self *Slogger) IsRunning() bool {
+	return self.task.IsRunning()
 }
 
 func (self *Slogger) Close() {
 	self._SafeDo(
 		func() interface{} {
-			if nil != self.task {
+			if self.task.IsRunning() {
 				self.task._Shutdown()
-				self.task = nil
-			}
-
-			if nil != self.processor {
 				(*self.processor).Shutdown()
-				self.processor = nil
 			}
-
 			return nil
 		},
 	)
 }
 
-func (self *Slogger) Settings() *SloggerSettings {
-	if v, ok := self._SafeDo(
-		func() interface{} {
-			return self.settings
-		},
-	).(SloggerSettings); ok {
-		return &v
-	}
-
-	return nil
+func (self *Slogger) Settings() SloggerSettings {
+	return self.settings
 }
 
-func (self *Slogger) Counters() *SloggerRecordCount {
+func (self *Slogger) RecordCounter() *SloggerRecordCount {
 	if v, ok := self._SafeDo(
 		func() interface{} {
 			return self.count
@@ -122,30 +106,20 @@ func (self *Slogger) GetLogPath() *string {
 
 //output log.
 func (self *Slogger) record(logLevel LogLevel, format string, v ...interface{}) {
+	//filter to loglevel.
+	if logLevel < self.settings.LogLevel {
+		return
+	}
+
 	fileName, fileLine := _GetFileInfoFromStack(3)
 
-	self._SafeDo(
-		func() interface{} {
-			//filter to loglevel.
-			if logLevel < self.settings.LogLevel {
-				return nil
-			}
-
-			//Enqueue.
-			if nil != self.task {
-				self.task._Offer(
-					&SloggerData{
-						CurrentTimeMillis: GetCurrentTimeMillis(),
-						LogLevel:          logLevel,
-						LogMessage:        fmt.Sprintf(format, v...),
-						SourceName:        fileName,
-						SourceLine:        fileLine,
-					},
-				)
-				return nil
-			} else {
-				return errors.New("task is nil.")
-			}
+	self.task._Offer(
+		&SloggerData{
+			CurrentTimeMillis: GetCurrentTimeMillis(),
+			LogLevel:          logLevel,
+			LogMessage:        fmt.Sprintf(format, v...),
+			SourceName:        fileName,
+			SourceLine:        fileLine,
 		},
 	)
 }
