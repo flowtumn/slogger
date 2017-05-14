@@ -7,10 +7,12 @@ type _CacheData struct {
 	data    *SloggerData
 }
 
+type _CacheDatas []*_CacheData
+
 type SloggerProcessorCacheFile struct {
 	SloggerProcessorFile
 	mutex   sync.Mutex
-	buffers *[]*_CacheData
+	buffers *_CacheDatas
 }
 
 func (self *SloggerProcessorCacheFile) _SafeDo(f func() interface{}) interface{} {
@@ -29,40 +31,32 @@ func (self *SloggerProcessorCacheFile) Offer(setting *SloggerSettings, data *Slo
 	)
 }
 
-func (self *SloggerProcessorCacheFile) Poll() *[]*_CacheData {
+func (self *SloggerProcessorCacheFile) Poll() *_CacheDatas {
 	if p, ok := self._SafeDo(
 		func() interface{} {
 			p := self.buffers
-			self.buffers = &[]*_CacheData{}
+			self.buffers = &_CacheDatas{}
 			return p
 		},
-	).(*[]*_CacheData); ok {
+	).(*_CacheDatas); ok {
 		return p
 	}
 	return nil
 }
 
 func (self *SloggerProcessorCacheFile) Record(setting SloggerSettings, data *SloggerData) error {
-	defer func() {
-
-	}()
+	self.Offer(&setting, data)
 	return nil
-	if err := self._UpdateSink(&setting, data.CurrentTimeMillis); nil != err {
-		return err
-	}
+}
 
-	//Log write.
-	if _, err := self.logFp.WriteString(data.ToLogMessage() + "\n"); nil != err {
-		return err
-	}
-
-	return nil
+func (self *SloggerProcessorCacheFile) Shutdown() {
+	self.SloggerProcessorFile.Shutdown()
 }
 
 func CreateSloggerProcessorCacheFile() *SloggerProcessor {
 	var r SloggerProcessor
 	r = &SloggerProcessorCacheFile{
-		buffers: &[]*_CacheData{},
+		buffers: &_CacheDatas{},
 	}
 	return &r
 }
