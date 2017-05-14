@@ -1,6 +1,7 @@
 package slogger
 
 import (
+	"bytes"
 	"sync"
 	"time"
 )
@@ -75,14 +76,23 @@ func (self *SloggerProcessorCacheFile) Shutdown() {
 
 func (self *SloggerProcessorCacheFile) _Write() bool {
 	if datas := self.Poll(); nil != datas {
+		buffer := bytes.NewBufferString("")
 		for _, v := range *datas {
-			if err := self.SloggerProcessorFile._UpdateSink(v.setting, v.data.CurrentTimeMillis); nil != err {
+			status, err := self.SloggerProcessorFile.UpdateSink(v.setting, v.data.CurrentTimeMillis)
+			if nil != err {
 				//error.
 				return true
 			}
 
-			self.logFp.WriteString(v.data.ToLogMessage() + "\n")
+			switch status {
+			case Update:
+				self.logFp.WriteString(buffer.String())
+				buffer.Reset()
+			case NoChange:
+				buffer.WriteString(v.data.ToLogMessage() + "\n")
+			}
 		}
+		self.logFp.WriteString(buffer.String())
 	}
 
 	return true && !self.shutdown.Get()
