@@ -1,6 +1,14 @@
 package slogger
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
+
+const (
+	//wait a 3ms.
+	TASK_WAIT_TIME = 3
+)
 
 type _CacheData struct {
 	setting *SloggerSettings
@@ -11,8 +19,10 @@ type _CacheDatas []*_CacheData
 
 type SloggerProcessorCacheFile struct {
 	SloggerProcessorFile
-	mutex   sync.Mutex
-	buffers *_CacheDatas
+	mutex    sync.Mutex
+	buffers  *_CacheDatas
+	task     *SimpleWork
+	shutdown AtomicBool
 }
 
 func (self *SloggerProcessorCacheFile) _SafeDo(f func() interface{}) interface{} {
@@ -45,18 +55,52 @@ func (self *SloggerProcessorCacheFile) Poll() *_CacheDatas {
 }
 
 func (self *SloggerProcessorCacheFile) Record(setting SloggerSettings, data *SloggerData) error {
+	//Append in queue.
 	self.Offer(&setting, data)
 	return nil
 }
 
 func (self *SloggerProcessorCacheFile) Shutdown() {
+	self.shutdown.Set(true)
+	for self.task.IsRunning() {
+		time.Sleep(TASK_WAIT_TIME >> 1)
+	}
+
+	//flush.
+	self._Write()
+
+	//File Shutdown.
 	self.SloggerProcessorFile.Shutdown()
 }
 
+func (self *SloggerProcessorCacheFile) _Write() bool {
+	if datas := self.Poll(); nil != datas {
+		for _, v := range *datas {
+			if err := self.SloggerProcessorFile._UpdateSink(v.setting, v.data.CurrentTimeMillis); nil != err {
+				//error.
+				return true
+			}
+
+			self.logFp.WriteString(v.data.ToLogMessage() + "\n")
+		}
+	}
+
+	return true && !self.shutdown.Get()
+}
+
 func CreateSloggerProcessorCacheFile() *SloggerProcessor {
-	var r SloggerProcessor
-	r = &SloggerProcessorCacheFile{
+	r := &SloggerProcessorCacheFile{
 		buffers: &_CacheDatas{},
 	}
-	return &r
+
+	r.task = CreateWork(
+		func() bool {
+			return r._Write()
+		},
+		TASK_WAIT_TIME,
+	)
+
+	var rr SloggerProcessor
+	rr = r
+	return &rr
 }
