@@ -16,8 +16,8 @@ const (
 	Fail
 )
 
-func _CreateLogFileName(prefix string, suffix string) string {
-	return prefix + "-" + GetTimeStamp(Normal) + "." + suffix
+func _CreateLogFileName(timeStamp int64, prefix string, suffix string) string {
+	return prefix + "-" + ConvertTimeStamp(timeStamp, Normal) + "." + suffix
 }
 
 func (self *SloggerProcessorFile) GetLogPath() *string {
@@ -58,7 +58,7 @@ func (self *SloggerProcessorFile) UpdateSink(setting *SloggerSettings, currentTi
 		self.logFp.Close()
 	}
 
-	self.logPath = _CreateLogFileName(setting.LogDirectory+"/"+setting.LogName, setting.LogExtension)
+	self.logPath = _CreateLogFileName(currentTimeMillis, setting.LogDirectory+"/"+setting.LogName, setting.LogExtension)
 	if fp, err := os.OpenFile(self.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); nil == err {
 		self.logFp = fp
 		return Update, nil

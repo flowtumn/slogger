@@ -32,7 +32,7 @@ func (self *SloggerProcessorCacheFile) _SafeDo(f func() interface{}) interface{}
 	return f()
 }
 
-func (self *SloggerProcessorCacheFile) Offer(setting *SloggerSettings, data *SloggerData) {
+func (self *SloggerProcessorCacheFile) _Offer(setting *SloggerSettings, data *SloggerData) {
 	self._SafeDo(
 		func() interface{} {
 			tmp := append(*self.buffers, &_CacheData{setting: setting, data: data})
@@ -42,7 +42,7 @@ func (self *SloggerProcessorCacheFile) Offer(setting *SloggerSettings, data *Slo
 	)
 }
 
-func (self *SloggerProcessorCacheFile) Poll() *_CacheDatas {
+func (self *SloggerProcessorCacheFile) _Poll() *_CacheDatas {
 	if p, ok := self._SafeDo(
 		func() interface{} {
 			p := self.buffers
@@ -57,7 +57,7 @@ func (self *SloggerProcessorCacheFile) Poll() *_CacheDatas {
 
 func (self *SloggerProcessorCacheFile) Record(setting SloggerSettings, data *SloggerData) error {
 	//Append in queue.
-	self.Offer(&setting, data)
+	self._Offer(&setting, data)
 	return nil
 }
 
@@ -75,7 +75,7 @@ func (self *SloggerProcessorCacheFile) Shutdown() {
 }
 
 func (self *SloggerProcessorCacheFile) _Write() bool {
-	if datas := self.Poll(); nil != datas {
+	if datas := self._Poll(); nil != datas {
 		buffer := bytes.NewBufferString("")
 		for _, v := range *datas {
 			status, err := self.SloggerProcessorFile.UpdateSink(v.setting, v.data.CurrentTimeMillis)
@@ -84,13 +84,12 @@ func (self *SloggerProcessorCacheFile) _Write() bool {
 				return true
 			}
 
-			switch status {
-			case Update:
+			if Update == status {
 				self.logFp.WriteString(buffer.String())
 				buffer.Reset()
-			case NoChange:
-				buffer.WriteString(v.data.ToLogMessage() + "\n")
 			}
+
+			buffer.WriteString(v.data.ToLogMessage() + "\n")
 		}
 		self.logFp.WriteString(buffer.String())
 	}
