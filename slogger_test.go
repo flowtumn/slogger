@@ -302,7 +302,7 @@ func Test_SLogger_MT(t *testing.T) {
 
 	r, err := CreateSlogger(
 		SETTINGS,
-		CreateSloggerProcessorFile(),
+		CreateSloggerProcessorNullSink(),
 	)
 
 	if nil != err {
@@ -311,15 +311,14 @@ func Test_SLogger_MT(t *testing.T) {
 
 	defer func() {
 		r.Close()
-		os.Remove(*r.GetLogPath())
 	}()
 
 	var waiter sync.WaitGroup
 	for i := 0; i < (int)(WORKER_COUNT); i++ {
 		waiter.Add(1)
 
-		//書き込む数は最大1万回。
-		count := genRand.Int63n(10000)
+		//書き込む数は最大10万回。
+		count := genRand.Int63n(100000)
 		TEST_CHECK.Debug = TEST_CHECK.Debug + count
 		TEST_CHECK.Info = TEST_CHECK.Info + count
 		TEST_CHECK.Warn = TEST_CHECK.Warn + count
