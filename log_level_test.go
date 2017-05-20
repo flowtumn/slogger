@@ -22,4 +22,8 @@ func Test_LogLevel_Base(t *testing.T) {
 	if logLevelTable[CRITICAL] != CRITICAL.ToString() {
 		t.Errorf("Error: Critical to string.")
 	}
+
+	if "[UNKNOWN]" != (LogLevel)(0xffffff).ToString() {
+		t.Errorf("Error: Unknown to string.")
+	}
 }

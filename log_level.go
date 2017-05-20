@@ -22,5 +22,5 @@ func (v LogLevel) ToString() string {
 	if v, ok := logLevelTable[v]; ok {
 		return v
 	}
-	return "UNKNOWN"
+	return "[UNKNOWN]"
 }

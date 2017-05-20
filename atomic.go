@@ -10,8 +10,10 @@ type AtomicBool struct {
 func (p *AtomicBool) _SafeDo(f func() bool) bool {
 	var r bool
 	p.mutex.Lock()
+	defer func() {
+		p.mutex.Unlock()
+	}()
 	r = f()
-	p.mutex.Unlock()
 	return r
 }
 
