@@ -1,5 +1,9 @@
 # slogger(Simple logger)
 
+[![Build Status](https://travis-ci.org/flowtumn/slogger.svg?branch=master)](https://travis-ci.org/flowtumn/slogger)
+
+[![Coverage Status](https://coveralls.io/repos/github/flowtumn/slogger/badge.svg?branch=master)](https://coveralls.io/github/flowtumn/slogger?branch=master)
+
  Go言語から使用出来る、簡易的な Logger Library. (Thread-safe)
 
 LogLevelでのフィルターと、日付毎に出力先を変えてログを記録する機能を有しています。
