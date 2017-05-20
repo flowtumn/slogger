@@ -1,8 +1,8 @@
 # slogger(Simple logger)
 
 [![Build Status](https://travis-ci.org/flowtumn/slogger.svg?branch=master)](https://travis-ci.org/flowtumn/slogger)
-
 [![Coverage Status](https://coveralls.io/repos/github/flowtumn/slogger/badge.svg?branch=master)](https://coveralls.io/github/flowtumn/slogger?branch=master)
+[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
  Go言語から使用出来る、簡易的な Logger Library. (Thread-safe)
 
