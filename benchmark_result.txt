@@ -1,0 +1,24 @@
+Measurement loglevel -> [DEBUG]
+ Null Sink: avg. 1305 ms
+Cache File: avg. 2058 ms
+      File: avg. 4539 ms
+Measurement loglevel -> [INFO]
+ Null Sink: avg. 1062 ms
+Cache File: avg. 1836 ms
+      File: avg. 3669 ms
+Measurement loglevel -> [WARN]
+ Null Sink: avg. 825 ms
+Cache File: avg. 1269 ms
+      File: avg. 2719 ms
+Measurement loglevel -> [ERROR]
+ Null Sink: avg. 524 ms
+Cache File: avg. 1035 ms
+      File: avg. 1839 ms
+Measurement loglevel -> [CRITICAL]
+ Null Sink: avg. 277 ms
+Cache File: avg. 413 ms
+      File: avg. 917 ms
+
+
+by Virtual Box ubuntu server.
+ Specs: 2cpu   1.2GB RAM
