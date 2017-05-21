@@ -358,7 +358,7 @@ func Test_SLogger_MT(t *testing.T) {
 	}
 }
 
-func Test_SLogger_LogDirectory_NotExists(t *testing.T) {
+func Test_SLogger_LogDirectory_NotExists_on_FileProcessor(t *testing.T) {
 	SETTINGS := SloggerSettings{
 		LogLevel:     DEBUG,
 		LogName:      "TEST",
@@ -414,6 +414,68 @@ func Test_SLogger_LogDirectory_NotExists(t *testing.T) {
 			Warn:     1,
 			Info:     1,
 			Debug:    1,
+		},
+	) {
+		t.Errorf("Record count does not match.")
+	}
+}
+
+func Test_SLogger_LogDirectory_NotExists_on_CacheFileProcessor(t *testing.T) {
+	SETTINGS := SloggerSettings{
+		LogLevel:     DEBUG,
+		LogName:      "TEST",
+		LogDirectory: "./_TEST_DIR_CACHE_",
+		LogExtension: "log",
+	}
+
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorCacheFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
+
+	os.Remove(SETTINGS.LogDirectory)
+
+	defer func() {
+		r.Close()
+		os.Remove(*r.GetLogPath())
+		os.Remove(SETTINGS.LogDirectory)
+	}()
+
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
+
+	//Directoryが存在しないが、Countはされている。
+	if !reflect.DeepEqual(
+		*r.RecordCounter(),
+		SloggerRecordCount{
+			Critical: 1,
+			Error:    1,
+			Warn:     1,
+			Info:     1,
+			Debug:    1,
+		},
+	) {
+		t.Errorf("Record count does not match.")
+	}
+
+	os.Mkdir(SETTINGS.LogDirectory, 0777)
+
+	time.Sleep(DEFAULT_TEST_WAIT_TIMES)
+
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
+
+	//Directoryを作成したので、前回のWrite分も含めて出力されている
+	if !reflect.DeepEqual(
+		*r.RecordCounter(),
+		SloggerRecordCount{
+			Critical: 2,
+			Error:    2,
+			Warn:     2,
+			Info:     2,
+			Debug:    2,
 		},
 	) {
 		t.Errorf("Record count does not match.")

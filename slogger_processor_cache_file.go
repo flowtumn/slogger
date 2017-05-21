@@ -80,8 +80,9 @@ func (self *SloggerProcessorCacheFile) _Write() bool {
 		for _, v := range *datas {
 			status, err := self.SloggerProcessorFile.UpdateSink(v.setting, v.data.CurrentTimeMillis)
 			if nil != err {
-				//error.
-				return true
+				//re Offer.
+				self._Offer(v.setting, v.data)
+				continue
 			}
 
 			if Update == status {
