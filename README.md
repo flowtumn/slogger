@@ -82,3 +82,10 @@ $ cat /tmp/EXAMPLE-SLOGGER-2017-05-06.log
 2017-05-06 23:41:46 [ERROR] main.go(25): Error Message.
 2017-05-06 23:41:46 [CRITICAL] main.go(26): Critical Message.
 ```
+
+
+## Benchmark
+
+[benchmark.go](https://github.com/flowtumn/slogger/blob/docs/benchmark.go "benchmark.go")
+
+![Benchmark_Level_DEBUG](https://github.com/flowtumn/slogger/blob/docs/benchmark_result_debug.png "DEBUG LEVEL")
