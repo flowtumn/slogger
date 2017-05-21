@@ -8,6 +8,10 @@ import (
 func Test_SLogger_RecordCount_Base(t *testing.T) {
 	v := SloggerRecordCount{}
 
+	//Unknown Level.
+	v._CountUpOnLogLevel((LogLevel)(0xffffff))
+
+	//Debug level.
 	v._CountUpOnLogLevel(DEBUG)
 	if !reflect.DeepEqual(
 		v,

@@ -61,6 +61,17 @@ func Test_SLogger_Base(t *testing.T) {
 	}
 }
 
+func Test_SLogger_Fail(t *testing.T) {
+	r, _ := CreateSlogger(
+		SloggerSettings{},
+		nil,
+	)
+
+	if r != nil {
+		t.Fatalf("Error: Slogger Object not nil.")
+	}
+}
+
 func Test_SLogger_Close(t *testing.T) {
 	SETTINGS := SloggerSettings{
 		LogLevel:     WARN,
