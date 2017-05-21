@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	DEFAULT_TEST_WAIT_TIMES = 500 * time.Millisecond
+	DEFAULT_TEST_WAIT_TIMES = 100 * time.Millisecond
 )
 
 func _writeLog(p *Slogger, waitTimes time.Duration) {
@@ -355,5 +355,67 @@ func Test_SLogger_MT(t *testing.T) {
 		TEST_CHECK,
 	) {
 		t.Errorf("Record count does not match. Actual: %+v,  Expected: %+v", *r.RecordCounter(), TEST_CHECK)
+	}
+}
+
+func Test_SLogger_LogDirectory_NotExists(t *testing.T) {
+	SETTINGS := SloggerSettings{
+		LogLevel:     DEBUG,
+		LogName:      "TEST",
+		LogDirectory: "./_TEST_DIR__",
+		LogExtension: "log",
+	}
+
+	r, err := CreateSlogger(
+		SETTINGS,
+		CreateSloggerProcessorFile(),
+	)
+
+	if nil != err {
+		t.Fatalf("Failed to CreateSlogger.")
+	}
+
+	os.Remove(SETTINGS.LogDirectory)
+
+	defer func() {
+		r.Close()
+		os.Remove(*r.GetLogPath())
+		os.Remove(SETTINGS.LogDirectory)
+	}()
+
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
+
+	//Directoryが存在しないので、出力はされていない。
+	if !reflect.DeepEqual(
+		*r.RecordCounter(),
+		SloggerRecordCount{
+			Critical: 0,
+			Error:    0,
+			Warn:     0,
+			Info:     0,
+			Debug:    0,
+		},
+	) {
+		t.Errorf("Record count does not match.")
+	}
+
+	os.Mkdir(SETTINGS.LogDirectory, 0777)
+
+	time.Sleep(DEFAULT_TEST_WAIT_TIMES)
+
+	_writeLog(r, DEFAULT_TEST_WAIT_TIMES)
+
+	//Directoryを作成したので、出力されている。
+	if !reflect.DeepEqual(
+		*r.RecordCounter(),
+		SloggerRecordCount{
+			Critical: 1,
+			Error:    1,
+			Warn:     1,
+			Info:     1,
+			Debug:    1,
+		},
+	) {
+		t.Errorf("Record count does not match.")
 	}
 }

@@ -52,14 +52,14 @@ func (self *SloggerProcessorFile) UpdateSink(setting *SloggerSettings, currentTi
 		return NoChange, nil
 	}
 
-	//Update a currentTimeStamp.
-	self.currentTimeStamp = tm
 	if nil != self.logFp {
 		self.logFp.Close()
 	}
 
 	self.logPath = _CreateLogFileName(currentTimeMillis, setting.LogDirectory+"/"+setting.LogName, setting.LogExtension)
 	if fp, err := os.OpenFile(self.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); nil == err {
+		//Update a currentTimeStamp.
+		self.currentTimeStamp = tm
 		self.logFp = fp
 		return Update, nil
 	} else {
