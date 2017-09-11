@@ -8,8 +8,16 @@ type SloggerProcessorFile struct {
 	logFp            *os.File
 }
 
-func _CreateLogFileName(prefix string, suffix string) string {
-	return prefix + "-" + GetTimeStamp(Normal) + "." + suffix
+type UpdateSinkResult int
+
+const (
+	Update UpdateSinkResult = iota + 1
+	NoChange
+	Fail
+)
+
+func _CreateLogFileName(timeStamp int64, prefix string, suffix string) string {
+	return prefix + "-" + ConvertTimeStamp(timeStamp, Normal) + "." + suffix
 }
 
 func (self *SloggerProcessorFile) GetLogPath() *string {
@@ -18,7 +26,7 @@ func (self *SloggerProcessorFile) GetLogPath() *string {
 }
 
 func (self *SloggerProcessorFile) Record(setting SloggerSettings, data *SloggerData) error {
-	if err := self._UpdateSink(&setting, data.CurrentTimeMillis); nil != err {
+	if _, err := self.UpdateSink(&setting, data.CurrentTimeMillis); nil != err {
 		return err
 	}
 
@@ -37,28 +45,26 @@ func (self *SloggerProcessorFile) Shutdown() {
 	}
 }
 
-func (self *SloggerProcessorFile) _UpdateSink(setting *SloggerSettings, currentTimeMillis int64) error {
+func (self *SloggerProcessorFile) UpdateSink(setting *SloggerSettings, currentTimeMillis int64) (UpdateSinkResult, error) {
 	tm := ConvertTimeStamp(currentTimeMillis, Normal)
 
 	if self.currentTimeStamp == tm {
-		return nil
+		return NoChange, nil
 	}
 
-	//Update a currentTimeStamp.
-	self.currentTimeStamp = tm
 	if nil != self.logFp {
 		self.logFp.Close()
 	}
 
-	self.logPath = _CreateLogFileName(setting.LogDirectory+"/"+setting.LogName, setting.LogExtension)
+	self.logPath = _CreateLogFileName(currentTimeMillis, setting.LogDirectory+"/"+setting.LogName, setting.LogExtension)
 	if fp, err := os.OpenFile(self.logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); nil == err {
+		//Update a currentTimeStamp.
+		self.currentTimeStamp = tm
 		self.logFp = fp
-		return nil
+		return Update, nil
 	} else {
-		return err
+		return Fail, err
 	}
-
-	return nil
 }
 
 func CreateSloggerProcessorFile() *SloggerProcessor {
